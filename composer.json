@@ -1,0 +1,34 @@
+{
+  "name": "hfryan/php-cop",
+  "description": "PHP Cop checks composer.lock and flags outdated or suspicious packages.",
+  "type": "project",
+  "keywords": ["security", "composer", "dependencies", "vulnerability", "audit", "cli"],
+  "homepage": "https://github.com/hfryan/php-cop",
+  "require": {
+    "php": ">=8.1",
+    "symfony/console": "^7.3",
+    "symfony/process": "^7.3",
+    "guzzlehttp/guzzle": "^7.8",
+    "composer/semver": "^3.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "PHPCop\\": "src/"
+    }
+  },
+  "bin": [
+    "bin/phpcop.php"
+  ],
+  "license": "MIT",
+  "authors": [
+    { 
+      "name": "hfryan",
+      "role": "Developer"
+    }
+  ],
+  "support": {
+    "issues": "https://github.com/hfryan/php-cop/issues",
+    "source": "https://github.com/hfryan/php-cop"
+  },
+  "minimum-stability": "stable"
+}
