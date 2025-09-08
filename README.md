@@ -22,20 +22,52 @@ PHPCop checks your `composer.lock` file and flags outdated or suspicious package
 
 ## Installation
 
-### Via Composer (Recommended)
+### Method 1: Global Installation (Recommended for regular use)
 
 ```bash
+# Install globally
 composer global require hfryan/php-cop
+
+# Run the setup helper to configure PATH
+php ~/.composer/vendor/hfryan/php-cop/bin/phpcop.php setup
 ```
 
-Then use anywhere:
+**Alternative manual setup:** If you prefer to configure PATH manually:
+
+**On macOS/Linux:**
 ```bash
-phpcop scan
+# Add to your shell profile (~/.zshrc, ~/.bash_profile, etc.)
+export PATH="$HOME/.composer/vendor/bin:$PATH"
+
+# Then restart your terminal or run:
+source ~/.zshrc
+
+# Now you can use:
+phpcop.php scan
 ```
 
-### Via Download
+**On Windows:**
+```bash
+# Add this directory to your Windows PATH environment variable:
+C:\Users\{YourUsername}\AppData\Roaming\Composer\vendor\bin
 
-Download the latest release and run directly with PHP:
+# Or use the full path directly:
+php C:\Users\{YourUsername}\AppData\Roaming\Composer\vendor\hfryan\php-cop\bin\phpcop.php scan
+```
+
+### Method 2: Per-Project Installation (Simplest)
+
+```bash
+# Install in your PHP project
+composer require --dev hfryan/php-cop
+
+# Run from project directory
+php vendor/bin/phpcop.php scan
+```
+
+### Method 3: Direct Download
+
+Download the latest release and run directly:
 ```bash
 php phpcop.phar scan
 ```
