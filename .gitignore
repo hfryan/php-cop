@@ -18,6 +18,7 @@ Thumbs.db
 
 # Claude Code settings
 /.claude/
+CLAUDE.md
 
 # Composer
 composer.phar
