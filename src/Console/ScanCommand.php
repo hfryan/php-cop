@@ -5,6 +5,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface as In;
 use Symfony\Component\Console\Output\OutputInterface as Out;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Helper\ProgressBar;
 use PHPCop\Services\{ComposerReader, PackagistClient, AuditRunner};
 
 final class ScanCommand extends Command
@@ -19,7 +20,8 @@ final class ScanCommand extends Command
             ->addOption('format', null, InputOption::VALUE_REQUIRED, 'table|json|md|html', 'table')
             ->addOption('stale-months', null, InputOption::VALUE_REQUIRED, 'Months to flag as stale', 18)
             ->addOption('fail-on', null, InputOption::VALUE_REQUIRED, 'low|moderate|high|critical', 'high')
-            ->addOption('composer-bin', null, InputOption::VALUE_REQUIRED, 'composer or composer.bat', 'composer');
+            ->addOption('composer-bin', null, InputOption::VALUE_REQUIRED, 'composer or composer.bat', 'composer')
+            ->addOption('quiet', 'q', InputOption::VALUE_NONE, 'Disable progress bar and animations');
     }
 
     protected function execute(In $in, Out $out): int
@@ -27,11 +29,37 @@ final class ScanCommand extends Command
         $reader    = new ComposerReader();
         $audit     = new AuditRunner();
         $packagist = new PackagistClient();
+        $isQuiet   = $in->getOption('quiet');
 
-        $pkgs       = $reader->readLock();
+        // Create progress bar (unless quiet mode)
+        $progressBar = null;
+        if (!$isQuiet) {
+            $progressBar = new ProgressBar($out);
+            $progressBar->setFormat('🚨 %message%' . "\n" . ' %bar% %percent:3s%%');
+            $progressBar->setBarCharacter('<fg=red>█</>');
+            $progressBar->setEmptyBarCharacter('<fg=blue>█</>');
+            $progressBar->setProgressCharacter('<fg=yellow>█</>');
+
+            $progressBar->setMessage('Reading composer.lock...');
+            $progressBar->start(4);
+            $progressBar->advance();
+        }
+
+        $pkgs = $reader->readLock();
+        
+        if ($progressBar) {
+            $progressBar->setMessage('Running security audit...');
+            $progressBar->advance();
+        }
+        
         $composerBin = (string)$in->getOption('composer-bin');
         $auditData  = $audit->run($composerBin);
         $advisories = $auditData['advisories']['packages'] ?? $auditData['advisories'] ?? [];
+
+        if ($progressBar) {
+            $progressBar->setMessage('Analyzing ' . count($pkgs) . ' packages...');
+            $progressBar->advance();
+        }
 
         $issues = [];
         $now = new \DateTimeImmutable();
@@ -66,6 +94,13 @@ final class ScanCommand extends Command
             if ($isOutdated || $abandoned || $isStale || $pkgAdvisories) {
                 $issues[] = compact('name','version','license','isOutdated','abandoned','isStale','pkgAdvisories','latestDisp','latestNorm');
             }
+        }
+
+        if ($progressBar) {
+            $progressBar->setMessage('Generating report...');
+            $progressBar->advance();
+            $progressBar->finish();
+            $out->writeln('');  // Add line break after progress bar
         }
 
         $format = (string)$in->getOption('format');
