@@ -8,7 +8,37 @@
   <strong>Dependency Patrol — PHP Security Scanner</strong>
 </p>
 
-PHPCop checks your `composer.lock` file and flags outdated or suspicious packages. Keep your PHP dependencies secure and up-to-date with comprehensive security scanning.
+<p align="center">
+  <a href="https://packagist.org/packages/hfryan/php-cop">
+    <img src="https://img.shields.io/packagist/v/hfryan/php-cop?style=flat-square&logo=packagist&logoColor=white" alt="Latest Version">
+  </a>
+  <a href="https://packagist.org/packages/hfryan/php-cop">
+    <img src="https://img.shields.io/packagist/dt/hfryan/php-cop?style=flat-square&logo=packagist&logoColor=white" alt="Total Downloads">
+  </a>
+  <a href="https://packagist.org/packages/hfryan/php-cop">
+    <img src="https://img.shields.io/packagist/php-v/hfryan/php-cop?style=flat-square&logo=php&logoColor=white" alt="PHP Version">
+  </a>
+  <a href="https://github.com/hfryan/php-cop/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/hfryan/php-cop?style=flat-square" alt="License">
+  </a>
+  <a href="https://github.com/hfryan/php-cop/releases">
+    <img src="https://img.shields.io/github/v/release/hfryan/php-cop?style=flat-square&logo=github" alt="GitHub Release">
+  </a>
+  <a href="https://github.com/hfryan/php-cop">
+    <img src="https://img.shields.io/github/stars/hfryan/php-cop?style=flat-square&logo=github" alt="GitHub Stars">
+  </a>
+</p>
+
+**PHPCop** is a powerful PHP security scanner that analyzes your `composer.lock` file to identify vulnerabilities, outdated packages, and maintenance issues in your dependencies. Keep your applications secure with comprehensive dependency health monitoring.
+
+## Why PHPCop? 🤔
+
+- **🛡️ Security First** - Detect known CVEs and security vulnerabilities before they impact your application
+- **📊 Professional Reports** - Generate beautiful HTML and Markdown reports for stakeholders  
+- **⚙️ CI/CD Ready** - Perfect exit codes and quiet modes for automated pipelines
+- **🎯 Zero Configuration** - Works out of the box, configure only what you need
+- **🚀 Fast & Efficient** - Minimal overhead with intelligent caching and parallel processing
+- **👥 Team Friendly** - Share security policies via committed configuration files
 
 ## Features
 
@@ -19,6 +49,21 @@ PHPCop checks your `composer.lock` file and flags outdated or suspicious package
 - 📊 **Multiple Output Formats** - Table, JSON, Markdown, and HTML output
 - 🎯 **Configurable Thresholds** - Set custom severity levels and staleness periods
 - ⚡ **CI/CD Ready** - Returns appropriate exit codes for automation
+
+## Quick Start 🚀
+
+```bash
+# Install PHPCop globally
+composer global require hfryan/php-cop
+
+# Scan your project (run in any PHP project directory)
+phpcop scan
+
+# Generate a beautiful HTML report
+phpcop scan --format=html > security-report.html
+```
+
+That's it! PHPCop will analyze your `composer.lock` and show you any security issues, outdated packages, or maintenance concerns.
 
 ## Installation
 
@@ -162,10 +207,30 @@ Create a `.phpcop.json` file in your project root for persistent settings:
 - Composer 2.x
 - A `composer.lock` file in your project
 
+## Contributing 🤝
+
+We welcome contributions! Here's how you can help:
+
+- **🐛 Bug Reports** - [Open an issue](https://github.com/hfryan/php-cop/issues) with details and reproduction steps
+- **💡 Feature Requests** - Share your ideas for new functionality
+- **🔧 Code Contributions** - Submit a pull request with your improvements
+- **📖 Documentation** - Help improve our docs and examples
+- **🌟 Spread the Word** - Star the repo, share with colleagues, write blog posts
+
+## Support
+
+- **📚 Documentation** - Check our comprehensive [README](README.md) and examples
+- **🐛 Issues** - Report bugs on [GitHub Issues](https://github.com/hfryan/php-cop/issues)
+- **💬 Discussions** - Join conversations in [GitHub Discussions](https://github.com/hfryan/php-cop/discussions)
+- **📦 Packagist** - View package details on [Packagist](https://packagist.org/packages/hfryan/php-cop)
+
 ## License
 
-MIT License. See [LICENSE](LICENSE) for details.
+Released under the [MIT License](LICENSE). Free for personal and commercial use.
 
-## Contributing
+---
 
-Contributions welcome! Please feel free to submit a Pull Request.
+<p align="center">
+  <strong>Built with ❤️ for the PHP community</strong><br>
+  <em>Keep your dependencies secure, one scan at a time! 🚓</em>
+</p>
