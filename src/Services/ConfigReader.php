@@ -32,6 +32,10 @@ final class ConfigReader
             'composer-bin' => 'composer',
             'quiet' => false,
             'ignore-packages' => [],
+            'dependency-type' => 'all',
+            'license-allowlist' => [],
+            'license-denylist' => [],
+            'min-severity' => 'low',
         ];
 
         // Merge with defaults
@@ -60,6 +64,24 @@ final class ConfigReader
         // Validate quiet is boolean
         if (!is_bool($config['quiet'])) {
             throw new \RuntimeException("quiet must be a boolean (true/false)");
+        }
+
+        // Validate dependency-type
+        if (!in_array($config['dependency-type'], ['all', 'only-dev', 'exclude-dev'])) {
+            throw new \RuntimeException("dependency-type must be: all, only-dev, exclude-dev");
+        }
+
+        // Validate license lists are arrays
+        if (!is_array($config['license-allowlist'])) {
+            throw new \RuntimeException("license-allowlist must be an array of license names");
+        }
+        if (!is_array($config['license-denylist'])) {
+            throw new \RuntimeException("license-denylist must be an array of license names");
+        }
+
+        // Validate min-severity
+        if (!in_array($config['min-severity'], ['low', 'moderate', 'high', 'critical'])) {
+            throw new \RuntimeException("min-severity must be: low, moderate, high, critical");
         }
 
         return $config;

@@ -23,7 +23,12 @@ final class ScanCommand extends Command
             ->addOption('composer-bin', null, InputOption::VALUE_REQUIRED, 'composer or composer.bat', 'composer')
             ->addOption('quiet', 'q', InputOption::VALUE_NONE, 'Disable progress bar and animations')
             ->addOption('config', 'c', InputOption::VALUE_REQUIRED, 'Path to config file', '.phpcop.json')
-            ->addOption('ignore-packages', null, InputOption::VALUE_REQUIRED, 'Comma-separated list of packages to ignore');
+            ->addOption('ignore-packages', null, InputOption::VALUE_REQUIRED, 'Comma-separated list of packages to ignore')
+            ->addOption('only-dev', null, InputOption::VALUE_NONE, 'Only scan dev dependencies')
+            ->addOption('exclude-dev', null, InputOption::VALUE_NONE, 'Exclude dev dependencies from scan')
+            ->addOption('license-allowlist', null, InputOption::VALUE_REQUIRED, 'Comma-separated list of allowed licenses')
+            ->addOption('license-denylist', null, InputOption::VALUE_REQUIRED, 'Comma-separated list of denied licenses')
+            ->addOption('min-severity', null, InputOption::VALUE_REQUIRED, 'Minimum vulnerability severity: low|moderate|high|critical', 'low');
     }
 
     protected function execute(In $in, Out $out): int
@@ -55,7 +60,8 @@ final class ScanCommand extends Command
             $progressBar->advance();
         }
 
-        $pkgs = $reader->readLock();
+        $dependencyType = $options['dependency-type'];
+        $pkgs = $reader->readLock('composer.lock', $dependencyType);
         
         if ($progressBar) {
             $progressBar->setMessage('Running security audit...');
@@ -75,6 +81,11 @@ final class ScanCommand extends Command
         $now = new \DateTimeImmutable();
         $staleMonths = $options['stale-months'];
         $ignorePackages = $options['ignore-packages'];
+        $licenseAllowlist = $options['license-allowlist'];
+        $licenseDenylist = $options['license-denylist'];
+        $minSeverity = $options['min-severity'];
+        $severityMap = ['low' => 1, 'moderate' => 2, 'high' => 3, 'critical' => 4];
+        $minSeverityLevel = $severityMap[$minSeverity] ?? 1;
 
         foreach ($pkgs as $p) {
             $name = $p['name']; $version = $p['version'];
@@ -97,15 +108,50 @@ final class ScanCommand extends Command
 
             $license = $info['license'] ?? null;
 
+            // Apply license filtering
+            if (!empty($licenseAllowlist)) {
+                $licenseMatches = false;
+                if ($license) {
+                    foreach ((array)$license as $lic) {
+                        if (in_array($lic, $licenseAllowlist, true)) {
+                            $licenseMatches = true;
+                            break;
+                        }
+                    }
+                }
+                if (!$licenseMatches) {
+                    continue; // Skip packages not in allowlist
+                }
+            }
+
+            if (!empty($licenseDenylist) && $license) {
+                $licenseDenied = false;
+                foreach ((array)$license as $lic) {
+                    if (in_array($lic, $licenseDenylist, true)) {
+                        $licenseDenied = true;
+                        break;
+                    }
+                }
+                if ($licenseDenied) {
+                    continue; // Skip packages in denylist
+                }
+            }
+
             $pkgAdvisories = [];
             foreach (($advisories[$name] ?? []) as $adv) {
-                $pkgAdvisories[] = [
-                    'title'    => $adv['title'] ?? ($adv['cve'] ?? 'Advisory'),
-                    'cve'      => $adv['cve'] ?? null,
-                    'link'     => $adv['link'] ?? null,
-                    'severity' => strtolower($adv['severity'] ?? 'unknown'),
-                    'affected' => $adv['affectedVersions'] ?? null,
-                ];
+                $advSeverity = strtolower($adv['severity'] ?? 'unknown');
+                $advSeverityLevel = $severityMap[$advSeverity] ?? 0;
+                
+                // Filter by minimum severity
+                if ($advSeverityLevel >= $minSeverityLevel) {
+                    $pkgAdvisories[] = [
+                        'title'    => $adv['title'] ?? ($adv['cve'] ?? 'Advisory'),
+                        'cve'      => $adv['cve'] ?? null,
+                        'link'     => $adv['link'] ?? null,
+                        'severity' => $advSeverity,
+                        'affected' => $adv['affectedVersions'] ?? null,
+                    ];
+                }
             }
 
             if ($isOutdated || $abandoned || $isStale || $pkgAdvisories) {
@@ -303,6 +349,39 @@ final class ScanCommand extends Command
         } else {
             $options['ignore-packages'] = $configIgnore;
         }
+
+        // Handle dependency type filtering
+        $dependencyType = 'all';
+        if ($input->getOption('only-dev')) {
+            $dependencyType = 'only-dev';
+        } elseif ($input->getOption('exclude-dev')) {
+            $dependencyType = 'exclude-dev';
+        } elseif (isset($config['dependency-type'])) {
+            $dependencyType = $config['dependency-type'];
+        }
+        $options['dependency-type'] = $dependencyType;
+
+        // Handle license filtering
+        $cliAllowlist = $input->getOption('license-allowlist');
+        $configAllowlist = $config['license-allowlist'] ?? [];
+        if ($cliAllowlist) {
+            $cliAllowlist = array_map('trim', explode(',', $cliAllowlist));
+            $options['license-allowlist'] = array_unique(array_merge($configAllowlist, $cliAllowlist));
+        } else {
+            $options['license-allowlist'] = $configAllowlist;
+        }
+
+        $cliDenylist = $input->getOption('license-denylist');
+        $configDenylist = $config['license-denylist'] ?? [];
+        if ($cliDenylist) {
+            $cliDenylist = array_map('trim', explode(',', $cliDenylist));
+            $options['license-denylist'] = array_unique(array_merge($configDenylist, $cliDenylist));
+        } else {
+            $options['license-denylist'] = $configDenylist;
+        }
+
+        // Handle minimum severity
+        $options['min-severity'] = $input->getOption('min-severity') !== 'low' ? $input->getOption('min-severity') : ($config['min-severity'] ?? 'low');
 
         return $options;
     }
