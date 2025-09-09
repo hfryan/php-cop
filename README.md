@@ -79,19 +79,37 @@ php phpcop.phar scan
 phpcop scan
 ```
 
-### Custom Options
+### Output Formats
 ```bash
-# JSON output
+# Terminal-friendly table (default)
+phpcop scan --format=table
+
+# JSON for automation/CI
 phpcop scan --format=json
 
+# Markdown for documentation
+phpcop scan --format=md > security-report.md
+
+# HTML for web viewing
+phpcop scan --format=html > report.html
+```
+
+### Custom Options
+```bash
 # Custom staleness threshold (12 months)
 phpcop scan --stale-months=12
 
 # Fail on moderate vulnerabilities instead of high
 phpcop scan --fail-on=moderate
 
-# Use custom composer binary
-phpcop scan --composer-bin=composer.bat
+# Ignore specific packages
+phpcop scan --ignore-packages=vendor/package,psr/log
+
+# Use custom config file
+phpcop scan --config=custom-config.json
+
+# Silent mode for automation
+phpcop scan --quiet
 ```
 
 ### Sample Output
