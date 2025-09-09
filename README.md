@@ -47,7 +47,8 @@
 - 🚫 **Abandoned Package Detection** - Flags packages that are no longer maintained
 - ⌛ **Stale Package Detection** - Finds packages that haven't been updated in months
 - 📊 **Multiple Output Formats** - Table, JSON, Markdown, and HTML output
-- 🎯 **Configurable Thresholds** - Set custom severity levels and staleness periods
+- 🎯 **Advanced Filtering** - Filter by dependency type, licenses, and vulnerability severity
+- 🎚️ **Configurable Thresholds** - Set custom severity levels and staleness periods
 - ⚡ **CI/CD Ready** - Returns appropriate exit codes for automation
 
 ## Quick Start 🚀
@@ -155,6 +156,21 @@ phpcop scan --config=custom-config.json
 
 # Silent mode for automation
 phpcop scan --quiet
+
+# Only scan dev dependencies
+phpcop scan --only-dev
+
+# Exclude dev dependencies from scan  
+phpcop scan --exclude-dev
+
+# Filter by allowed licenses
+phpcop scan --license-allowlist=MIT,Apache-2.0
+
+# Exclude packages with specific licenses
+phpcop scan --license-denylist=GPL-3.0
+
+# Only show critical vulnerabilities
+phpcop scan --min-severity=critical
 ```
 
 ### Sample Output
@@ -165,6 +181,52 @@ phpcop scan --quiet
 • psr/container 2.0.2  [⌛ Stale]
 • symfony/console v7.3.2  [⬆️ Outdated → v7.3.3]
    └─ 🚨 high CVE-2023-12345 https://cve.mitre.org/...
+```
+
+## Advanced Filtering 🎯
+
+PHPCop provides powerful filtering options to focus your security analysis:
+
+### Dependency Type Filtering
+```bash
+# Scan only development dependencies
+phpcop scan --only-dev
+
+# Exclude development dependencies (production only)
+phpcop scan --exclude-dev
+```
+
+### License Filtering
+```bash
+# Only scan packages with specific licenses
+phpcop scan --license-allowlist=MIT,Apache-2.0,BSD-3-Clause
+
+# Exclude packages with unwanted licenses
+phpcop scan --license-denylist=GPL-3.0,AGPL-3.0
+
+# Combine with other options
+phpcop scan --exclude-dev --license-allowlist=MIT --format=json
+```
+
+### Vulnerability Severity Filtering
+```bash
+# Show only high and critical vulnerabilities
+phpcop scan --min-severity=high
+
+# Focus on critical issues only
+phpcop scan --min-severity=critical --format=html > critical-report.html
+```
+
+### Combined Filtering Examples
+```bash
+# Production security audit: exclude dev deps, only critical vulns
+phpcop scan --exclude-dev --min-severity=critical
+
+# License compliance check: only MIT/Apache packages, exclude dev deps
+phpcop scan --exclude-dev --license-allowlist=MIT,Apache-2.0
+
+# Development workflow: dev packages only, moderate+ vulnerabilities
+phpcop scan --only-dev --min-severity=moderate --format=md > dev-security.md
 ```
 
 ## Configuration
@@ -183,7 +245,11 @@ Create a `.phpcop.json` file in your project root for persistent settings:
   "ignore-packages": [
     "symfony/polyfill-*",
     "psr/log"
-  ]
+  ],
+  "dependency-type": "exclude-dev",
+  "license-allowlist": ["MIT", "Apache-2.0"],
+  "license-denylist": ["GPL-3.0"],
+  "min-severity": "moderate"
 }
 ```
 
@@ -198,6 +264,11 @@ Create a `.phpcop.json` file in your project root for persistent settings:
 | `--quiet`, `-q` | `false` | Disable progress bar and animations |
 | `--config`, `-c` | `.phpcop.json` | Path to configuration file |
 | `--ignore-packages` | `[]` | Comma-separated packages to ignore |
+| `--only-dev` | `false` | Only scan dev dependencies |
+| `--exclude-dev` | `false` | Exclude dev dependencies from scan |
+| `--license-allowlist` | `[]` | Comma-separated list of allowed licenses |
+| `--license-denylist` | `[]` | Comma-separated list of denied licenses |
+| `--min-severity` | `low` | Minimum vulnerability severity: `low`, `moderate`, `high`, `critical` |
 
 **Note:** Command-line options override configuration file settings.
 
