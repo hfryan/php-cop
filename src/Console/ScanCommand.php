@@ -6,7 +6,7 @@ use Symfony\Component\Console\Input\InputInterface as In;
 use Symfony\Component\Console\Output\OutputInterface as Out;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Helper\ProgressBar;
-use PHPCop\Services\{ComposerReader, PackagistClient, AuditRunner};
+use PHPCop\Services\{ComposerReader, PackagistClient, AuditRunner, ConfigReader};
 
 final class ScanCommand extends Command
 {
@@ -21,7 +21,9 @@ final class ScanCommand extends Command
             ->addOption('stale-months', null, InputOption::VALUE_REQUIRED, 'Months to flag as stale', 18)
             ->addOption('fail-on', null, InputOption::VALUE_REQUIRED, 'low|moderate|high|critical', 'high')
             ->addOption('composer-bin', null, InputOption::VALUE_REQUIRED, 'composer or composer.bat', 'composer')
-            ->addOption('quiet', 'q', InputOption::VALUE_NONE, 'Disable progress bar and animations');
+            ->addOption('quiet', 'q', InputOption::VALUE_NONE, 'Disable progress bar and animations')
+            ->addOption('config', 'c', InputOption::VALUE_REQUIRED, 'Path to config file', '.phpcop.json')
+            ->addOption('ignore-packages', null, InputOption::VALUE_REQUIRED, 'Comma-separated list of packages to ignore');
     }
 
     protected function execute(In $in, Out $out): int
@@ -29,7 +31,15 @@ final class ScanCommand extends Command
         $reader    = new ComposerReader();
         $audit     = new AuditRunner();
         $packagist = new PackagistClient();
-        $isQuiet   = $in->getOption('quiet');
+        $configReader = new ConfigReader();
+
+        // Load configuration file and merge with CLI options
+        $configFile = $in->getOption('config');
+        $config = $configReader->readConfig($configFile);
+        
+        // CLI options override config file
+        $options = $this->mergeOptions($config, $in);
+        $isQuiet = $options['quiet'];
 
         // Create progress bar (unless quiet mode)
         $progressBar = null;
@@ -52,7 +62,7 @@ final class ScanCommand extends Command
             $progressBar->advance();
         }
         
-        $composerBin = (string)$in->getOption('composer-bin');
+        $composerBin = $options['composer-bin'];
         $auditData  = $audit->run($composerBin);
         $advisories = $auditData['advisories']['packages'] ?? $auditData['advisories'] ?? [];
 
@@ -63,10 +73,17 @@ final class ScanCommand extends Command
 
         $issues = [];
         $now = new \DateTimeImmutable();
-        $staleMonths = (int)$in->getOption('stale-months');
+        $staleMonths = $options['stale-months'];
+        $ignorePackages = $options['ignore-packages'];
 
         foreach ($pkgs as $p) {
             $name = $p['name']; $version = $p['version'];
+            
+            // Skip ignored packages
+            if (in_array($name, $ignorePackages, true)) {
+                continue;
+            }
+            
             $info = $packagist->packageInfo($name);
 
             $latestNorm = $info['latest']['version_normalized'] ?? null;
@@ -103,7 +120,7 @@ final class ScanCommand extends Command
             $out->writeln('');  // Add line break after progress bar
         }
 
-        $format = (string)$in->getOption('format');
+        $format = $options['format'];
         if ($format === 'table') {
             $out->writeln("<info>🚓 PHP Cop: Dependency Patrol — Case File</info>");
             $out->writeln(str_repeat('-', 80));
@@ -124,7 +141,7 @@ final class ScanCommand extends Command
         }
 
         $thresholdMap = ['low'=>1,'moderate'=>2,'high'=>3,'critical'=>4];
-        $threshold = $thresholdMap[$in->getOption('fail-on')] ?? 3;
+        $threshold = $thresholdMap[$options['fail-on']] ?? 3;
         $max = 0;
         foreach ($issues as $i) {
             foreach ($i['pkgAdvisories'] as $a) {
@@ -133,5 +150,30 @@ final class ScanCommand extends Command
         }
 
         return ($max >= $threshold) ? Command::FAILURE : Command::SUCCESS;
+    }
+
+    private function mergeOptions(array $config, In $input): array
+    {
+        $options = [];
+
+        // For each option, CLI overrides config, config overrides defaults
+        $options['format'] = $input->getOption('format') !== 'table' ? $input->getOption('format') : ($config['format'] ?? 'table');
+        $options['stale-months'] = (int)($input->getOption('stale-months') != 18 ? $input->getOption('stale-months') : ($config['stale-months'] ?? 18));
+        $options['fail-on'] = $input->getOption('fail-on') !== 'high' ? $input->getOption('fail-on') : ($config['fail-on'] ?? 'high');
+        $options['composer-bin'] = $input->getOption('composer-bin') !== 'composer' ? $input->getOption('composer-bin') : ($config['composer-bin'] ?? 'composer');
+        $options['quiet'] = $input->getOption('quiet') ?: ($config['quiet'] ?? false);
+        
+        // Handle ignore-packages from both CLI and config
+        $cliIgnore = $input->getOption('ignore-packages');
+        $configIgnore = $config['ignore-packages'] ?? [];
+        
+        if ($cliIgnore) {
+            $cliIgnore = array_map('trim', explode(',', $cliIgnore));
+            $options['ignore-packages'] = array_unique(array_merge($configIgnore, $cliIgnore));
+        } else {
+            $options['ignore-packages'] = $configIgnore;
+        }
+
+        return $options;
     }
 }

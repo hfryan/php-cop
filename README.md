@@ -104,7 +104,27 @@ phpcop scan --composer-bin=composer.bat
    └─ 🚨 high CVE-2023-12345 https://cve.mitre.org/...
 ```
 
-## Options
+## Configuration
+
+### Configuration File
+
+Create a `.phpcop.json` file in your project root for persistent settings:
+
+```json
+{
+  "format": "table",
+  "stale-months": 18,
+  "fail-on": "high",
+  "composer-bin": "composer",
+  "quiet": false,
+  "ignore-packages": [
+    "symfony/polyfill-*",
+    "psr/log"
+  ]
+}
+```
+
+### Command Options
 
 | Option | Default | Description |
 |--------|---------|-------------|
@@ -112,6 +132,11 @@ phpcop scan --composer-bin=composer.bat
 | `--stale-months` | `18` | Months to flag packages as stale |
 | `--fail-on` | `high` | Minimum severity to fail: `low`, `moderate`, `high`, `critical` |
 | `--composer-bin` | `composer` | Path to composer executable |
+| `--quiet`, `-q` | `false` | Disable progress bar and animations |
+| `--config`, `-c` | `.phpcop.json` | Path to configuration file |
+| `--ignore-packages` | `[]` | Comma-separated packages to ignore |
+
+**Note:** Command-line options override configuration file settings.
 
 ## Requirements
 

@@ -1,0 +1,12 @@
+{
+  "format": "table",
+  "stale-months": 18,
+  "fail-on": "high",
+  "composer-bin": "composer",
+  "quiet": false,
+  "ignore-packages": [
+    "symfony/polyfill-*",
+    "psr/log",
+    "doctrine/lexer"
+  ]
+}
