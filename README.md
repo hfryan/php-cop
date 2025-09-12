@@ -49,7 +49,8 @@
 - 📊 **Multiple Output Formats** - Table, JSON, Markdown, and HTML output
 - 🎯 **Advanced Filtering** - Filter by dependency type, licenses, and vulnerability severity
 - 🎚️ **Configurable Thresholds** - Set custom severity levels and staleness periods
-- ⚡ **CI/CD Ready** - Returns appropriate exit codes for automation
+- ⚡ **High Performance** - Parallel API calls and intelligent caching for fast scans
+- 🚀 **CI/CD Ready** - Returns appropriate exit codes for automation
 
 ## Quick Start 🚀
 
@@ -111,12 +112,28 @@ composer require --dev hfryan/php-cop
 php vendor/bin/phpcop.php scan
 ```
 
-### Method 3: Direct Download
+### Method 3: PHAR Download (Recommended for CI/CD)
 
-Download the latest release and run directly:
+Download the latest PHAR release for zero-dependency deployment:
+
 ```bash
+# Download from GitHub releases
+wget https://github.com/hfryan/php-cop/releases/latest/download/phpcop.phar
+chmod +x phpcop.phar
+
+# Run directly
 php phpcop.phar scan
+
+# Or make it executable (Linux/macOS)
+./phpcop.phar scan
 ```
+
+**Benefits:**
+- ✅ No Composer or dependencies required
+- ✅ Single file deployment
+- ✅ Perfect for CI/CD pipelines
+- ✅ Works in Docker containers
+- ✅ Consistent across environments
 
 ## Usage
 
@@ -171,6 +188,9 @@ phpcop scan --license-denylist=GPL-3.0
 
 # Only show critical vulnerabilities
 phpcop scan --min-severity=critical
+
+# Disable response caching (force fresh API calls)
+phpcop scan --no-cache
 ```
 
 ### Sample Output
@@ -229,6 +249,41 @@ phpcop scan --exclude-dev --license-allowlist=MIT,Apache-2.0
 phpcop scan --only-dev --min-severity=moderate --format=md > dev-security.md
 ```
 
+## Performance & Caching ⚡
+
+PHPCop is optimized for speed with intelligent caching and parallel processing:
+
+### Parallel API Calls
+- **Concurrent requests** - Fetches package data in parallel instead of sequentially
+- **Significant speedup** - 10-50x faster for projects with many dependencies
+- **Automatic batching** - Groups API calls for maximum efficiency
+
+### Intelligent Caching
+- **Multi-level cache** - Memory cache + persistent file cache
+- **Smart TTL** - 1-hour default cache lifetime (configurable)
+- **Automatic cleanup** - Expired cache files are removed automatically
+- **Cross-run persistence** - Subsequent scans use cached data for speed
+
+### Cache Control
+```bash
+# Disable caching for fresh data
+phpcop scan --no-cache
+
+# Configure cache in .phpcop.json
+{
+  "cache-enabled": true,
+  "cache-ttl": 1800  // 30 minutes
+}
+```
+
+**Cache Location:** `{system-temp}/phpcop-cache/`
+
+### Performance Tips
+- **First run**: May take longer as cache is populated
+- **Subsequent runs**: Near-instant for unchanged dependencies
+- **CI environments**: Consider `--no-cache` for fresh builds
+- **Development**: Keep caching enabled for faster iteration
+
 ## Configuration
 
 ### Configuration File
@@ -249,7 +304,9 @@ Create a `.phpcop.json` file in your project root for persistent settings:
   "dependency-type": "exclude-dev",
   "license-allowlist": ["MIT", "Apache-2.0"],
   "license-denylist": ["GPL-3.0"],
-  "min-severity": "moderate"
+  "min-severity": "moderate",
+  "cache-enabled": true,
+  "cache-ttl": 3600
 }
 ```
 
@@ -269,6 +326,7 @@ Create a `.phpcop.json` file in your project root for persistent settings:
 | `--license-allowlist` | `[]` | Comma-separated list of allowed licenses |
 | `--license-denylist` | `[]` | Comma-separated list of denied licenses |
 | `--min-severity` | `low` | Minimum vulnerability severity: `low`, `moderate`, `high`, `critical` |
+| `--no-cache` | `false` | Disable response caching (force fresh API calls) |
 
 **Note:** Command-line options override configuration file settings.
 
@@ -277,6 +335,41 @@ Create a `.phpcop.json` file in your project root for persistent settings:
 - PHP 8.1 or higher
 - Composer 2.x
 - A `composer.lock` file in your project
+
+## Building from Source 🔧
+
+### Building the PHAR
+
+To build your own PHAR archive:
+
+```bash
+# Install dependencies
+composer install --no-dev --optimize-autoloader
+
+# Build PHAR (requires phar.readonly=0)
+php -d phar.readonly=0 build-phar.php
+
+# Or use make (if available)
+make phar
+```
+
+The generated `phpcop.phar` file is self-contained and can be distributed independently.
+
+### Development Commands
+
+```bash
+# Install dev dependencies
+composer install
+
+# Run from source
+php bin/phpcop.php scan
+
+# Build PHAR
+make phar
+
+# Clean build artifacts  
+make clean
+```
 
 ## Contributing 🤝
 
