@@ -191,6 +191,64 @@ phpcop scan --min-severity=critical
 
 # Disable response caching (force fresh API calls)
 phpcop scan --no-cache
+
+# Use legacy exit codes for backwards compatibility
+phpcop scan --exit-code=legacy
+```
+
+## CI/CD Integration 🚀
+
+PHPCop is designed for seamless CI/CD integration with intelligent exit codes and automation-friendly features.
+
+### Enhanced Exit Codes (Default)
+
+PHPCop uses granular exit codes to provide precise information for automated pipelines:
+
+```bash
+0 = SUCCESS   - No issues found, all dependencies secure
+1 = WARNINGS  - Minor issues (stale packages, low-severity vulnerabilities)  
+2 = ERRORS    - Moderate issues (outdated packages, abandoned dependencies, moderate vulnerabilities)
+3 = CRITICAL  - High-priority issues (high/critical security vulnerabilities)
+```
+
+### CI/CD Examples
+
+```bash
+# Basic CI check - fail on any vulnerabilities
+phpcop scan --fail-on=low --quiet
+echo "Exit code: $?"
+
+# Production deployment - fail only on high/critical vulnerabilities
+phpcop scan --fail-on=high --format=json > security-report.json
+echo "Exit code: $?"
+
+# Security-focused scan - exclude dev dependencies
+phpcop scan --exclude-dev --min-severity=moderate --exit-code=enhanced
+echo "Exit code: $?"
+
+# Legacy compatibility mode (simple 0/1 exit codes)
+phpcop scan --exit-code=legacy --fail-on=high
+echo "Exit code: $?"
+```
+
+### GitHub Actions Example
+
+```yaml
+- name: Security Scan
+  run: |
+    wget https://github.com/hfryan/php-cop/releases/latest/download/phpcop.phar
+    php phpcop.phar scan --format=json --quiet
+    
+- name: Handle Security Results
+  if: ${{ failure() }}
+  run: echo "Security issues found - check the logs"
+```
+
+### Docker Integration
+
+```dockerfile
+RUN wget https://github.com/hfryan/php-cop/releases/latest/download/phpcop.phar && \
+    php phpcop.phar scan --exclude-dev --fail-on=high
 ```
 
 ### Sample Output
@@ -327,6 +385,7 @@ Create a `.phpcop.json` file in your project root for persistent settings:
 | `--license-denylist` | `[]` | Comma-separated list of denied licenses |
 | `--min-severity` | `low` | Minimum vulnerability severity: `low`, `moderate`, `high`, `critical` |
 | `--no-cache` | `false` | Disable response caching (force fresh API calls) |
+| `--exit-code` | `enhanced` | Exit code behavior: `legacy`, `enhanced` |
 
 **Note:** Command-line options override configuration file settings.
 

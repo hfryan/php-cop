@@ -28,14 +28,15 @@ final class ScanCommand extends Command
             ->addOption('exclude-dev', null, InputOption::VALUE_NONE, 'Exclude dev dependencies from scan')
             ->addOption('license-allowlist', null, InputOption::VALUE_REQUIRED, 'Comma-separated list of allowed licenses')
             ->addOption('license-denylist', null, InputOption::VALUE_REQUIRED, 'Comma-separated list of denied licenses')
-            ->addOption('min-severity', null, InputOption::VALUE_REQUIRED, 'Minimum vulnerability severity: low|moderate|high|critical', 'low');
+            ->addOption('min-severity', null, InputOption::VALUE_REQUIRED, 'Minimum vulnerability severity: low|moderate|high|critical', 'low')
+            ->addOption('no-cache', null, InputOption::VALUE_NONE, 'Disable response caching')
+            ->addOption('exit-code', null, InputOption::VALUE_REQUIRED, 'Exit code behavior: legacy|enhanced', 'enhanced');
     }
 
     protected function execute(In $in, Out $out): int
     {
         $reader    = new ComposerReader();
         $audit     = new AuditRunner();
-        $packagist = new PackagistClient();
         $configReader = new ConfigReader();
 
         // Load configuration file and merge with CLI options
@@ -45,6 +46,11 @@ final class ScanCommand extends Command
         // CLI options override config file
         $options = $this->mergeOptions($config, $in);
         $isQuiet = $options['quiet'];
+
+        // Initialize PackagistClient with cache settings
+        $cacheEnabled = $options['cache-enabled'] && !$in->getOption('no-cache');
+        $cacheTtl = $options['cache-ttl'];
+        $packagist = new PackagistClient(null, $cacheEnabled, $cacheTtl);
 
         // Create progress bar (unless quiet mode)
         $progressBar = null;
@@ -87,15 +93,21 @@ final class ScanCommand extends Command
         $severityMap = ['low' => 1, 'moderate' => 2, 'high' => 3, 'critical' => 4];
         $minSeverityLevel = $severityMap[$minSeverity] ?? 1;
 
-        foreach ($pkgs as $p) {
-            $name = $p['name']; $version = $p['version'];
-            
-            // Skip ignored packages
-            if (in_array($name, $ignorePackages, true)) {
-                continue;
-            }
-            
-            $info = $packagist->packageInfo($name);
+        // Filter out ignored packages first to avoid unnecessary API calls
+        $packagesToAnalyze = array_filter($pkgs, function($p) use ($ignorePackages) {
+            return !in_array($p['name'], $ignorePackages, true);
+        });
+
+        // Extract package names for batch processing
+        $packageNames = array_column($packagesToAnalyze, 'name');
+        
+        // Batch fetch package info from Packagist
+        $packageInfos = $packagist->packageInfoBatch($packageNames);
+
+        foreach ($packagesToAnalyze as $p) {
+            $name = $p['name']; 
+            $version = $p['version'];
+            $info = $packageInfos[$name] ?? [];
 
             $latestNorm = $info['latest']['version_normalized'] ?? null;
             $latestDisp = $info['latest']['version'] ?? null;
@@ -184,16 +196,115 @@ final class ScanCommand extends Command
                 throw new \RuntimeException("Unsupported format: {$format}");
         }
 
-        $thresholdMap = ['low'=>1,'moderate'=>2,'high'=>3,'critical'=>4];
-        $threshold = $thresholdMap[$options['fail-on']] ?? 3;
-        $max = 0;
-        foreach ($issues as $i) {
-            foreach ($i['pkgAdvisories'] as $a) {
-                $max = max($max, $thresholdMap[$a['severity']] ?? 0);
+        return $this->determineExitCode($issues, $options['fail-on'], $options['exit-code']);
+    }
+
+    /**
+     * Determine appropriate exit code based on issues found
+     * 
+     * Enhanced exit codes:
+     * 0 = SUCCESS   - No issues found
+     * 1 = WARNINGS  - Minor issues (stale packages, low vulnerabilities)
+     * 2 = ERRORS    - Moderate issues (outdated packages, abandoned packages, moderate vulnerabilities)
+     * 3 = CRITICAL  - High-priority issues (high/critical vulnerabilities)
+     * 
+     * Legacy exit codes:
+     * 0 = SUCCESS   - No vulnerabilities above fail-on threshold
+     * 1 = FAILURE   - Vulnerabilities found above fail-on threshold
+     */
+    private function determineExitCode(array $issues, string $failOnThreshold, string $exitCodeMode): int
+    {
+        if (empty($issues)) {
+            return 0; // SUCCESS: No issues found
+        }
+
+        // Legacy mode: simple vulnerability-based exit codes (backwards compatibility)
+        if ($exitCodeMode === 'legacy') {
+            $thresholdMap = ['low' => 1, 'moderate' => 2, 'high' => 3, 'critical' => 4];
+            $threshold = $thresholdMap[$failOnThreshold] ?? 3;
+            $maxVulnSeverity = 0;
+
+            foreach ($issues as $issue) {
+                if (!empty($issue['pkgAdvisories'])) {
+                    foreach ($issue['pkgAdvisories'] as $advisory) {
+                        $severity = strtolower($advisory['severity'] ?? 'unknown');
+                        $severityLevel = $thresholdMap[$severity] ?? 0;
+                        $maxVulnSeverity = max($maxVulnSeverity, $severityLevel);
+                    }
+                }
+            }
+
+            return ($maxVulnSeverity >= $threshold) ? Command::FAILURE : Command::SUCCESS;
+        }
+
+        // Enhanced mode: granular exit codes based on issue types
+
+        $hasVulnerabilities = false;
+        $hasHighCriticalVulns = false;
+        $hasModerateVulns = false;
+        $hasAbandonedPackages = false;
+        $hasOutdatedPackages = false;
+        $hasStalePackages = false;
+
+        $severityMap = ['low' => 1, 'moderate' => 2, 'high' => 3, 'critical' => 4];
+        $maxVulnSeverity = 0;
+
+        foreach ($issues as $issue) {
+            // Check for different types of issues
+            if ($issue['abandoned']) {
+                $hasAbandonedPackages = true;
+            }
+            if ($issue['isOutdated']) {
+                $hasOutdatedPackages = true;
+            }
+            if ($issue['isStale']) {
+                $hasStalePackages = true;
+            }
+
+            // Analyze vulnerabilities
+            if (!empty($issue['pkgAdvisories'])) {
+                $hasVulnerabilities = true;
+                foreach ($issue['pkgAdvisories'] as $advisory) {
+                    $severity = strtolower($advisory['severity'] ?? 'unknown');
+                    $severityLevel = $severityMap[$severity] ?? 0;
+                    $maxVulnSeverity = max($maxVulnSeverity, $severityLevel);
+
+                    if ($severityLevel >= 3) { // high or critical
+                        $hasHighCriticalVulns = true;
+                    } elseif ($severityLevel >= 2) { // moderate
+                        $hasModerateVulns = true;
+                    }
+                }
             }
         }
 
-        return ($max >= $threshold) ? Command::FAILURE : Command::SUCCESS;
+        // Determine exit code based on severity and fail-on threshold
+        $thresholdMap = ['low' => 1, 'moderate' => 2, 'high' => 3, 'critical' => 4];
+        $threshold = $thresholdMap[$failOnThreshold] ?? 3;
+
+        // If vulnerabilities exceed the fail-on threshold, that takes precedence
+        if ($hasVulnerabilities && $maxVulnSeverity >= $threshold) {
+            if ($hasHighCriticalVulns) {
+                return 3; // CRITICAL: High/critical vulnerabilities found
+            } elseif ($hasModerateVulns) {
+                return 2; // ERRORS: Moderate vulnerabilities found
+            }
+        }
+
+        // If no vulnerabilities exceed threshold, categorize by other issue types
+        if ($hasHighCriticalVulns) {
+            return 3; // CRITICAL: High/critical vulnerabilities (regardless of threshold)
+        }
+
+        if ($hasAbandonedPackages || $hasOutdatedPackages || $hasModerateVulns) {
+            return 2; // ERRORS: Abandoned, outdated, or moderate vulnerabilities
+        }
+
+        if ($hasStalePackages || $hasVulnerabilities) {
+            return 1; // WARNINGS: Stale packages or low-severity vulnerabilities
+        }
+
+        return 0; // SUCCESS: No issues (shouldn't reach here if issues array is not empty)
     }
 
     private function outputTable(Out $out, array $issues): void
@@ -382,6 +493,13 @@ final class ScanCommand extends Command
 
         // Handle minimum severity
         $options['min-severity'] = $input->getOption('min-severity') !== 'low' ? $input->getOption('min-severity') : ($config['min-severity'] ?? 'low');
+
+        // Handle cache settings
+        $options['cache-enabled'] = $config['cache-enabled'] ?? true;
+        $options['cache-ttl'] = $config['cache-ttl'] ?? 3600;
+
+        // Handle exit code behavior
+        $options['exit-code'] = $input->getOption('exit-code') !== 'enhanced' ? $input->getOption('exit-code') : ($config['exit-code'] ?? 'enhanced');
 
         return $options;
     }

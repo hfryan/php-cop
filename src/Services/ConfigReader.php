@@ -36,6 +36,9 @@ final class ConfigReader
             'license-allowlist' => [],
             'license-denylist' => [],
             'min-severity' => 'low',
+            'cache-enabled' => true,
+            'cache-ttl' => 3600,
+            'exit-code' => 'enhanced',
         ];
 
         // Merge with defaults
@@ -82,6 +85,20 @@ final class ConfigReader
         // Validate min-severity
         if (!in_array($config['min-severity'], ['low', 'moderate', 'high', 'critical'])) {
             throw new \RuntimeException("min-severity must be: low, moderate, high, critical");
+        }
+
+        // Validate cache settings
+        if (!is_bool($config['cache-enabled'])) {
+            throw new \RuntimeException("cache-enabled must be a boolean (true/false)");
+        }
+
+        if (!is_int($config['cache-ttl']) || $config['cache-ttl'] < 0) {
+            throw new \RuntimeException("cache-ttl must be a non-negative integer (seconds)");
+        }
+
+        // Validate exit-code
+        if (!in_array($config['exit-code'], ['legacy', 'enhanced'])) {
+            throw new \RuntimeException("exit-code must be: legacy, enhanced");
         }
 
         return $config;
