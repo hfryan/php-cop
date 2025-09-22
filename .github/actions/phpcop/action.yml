@@ -222,24 +222,14 @@ runs:
           }
           
           // Create comment body
-          const commentBody = `## ` + statusEmoji + ` PHPCop Security Scan Results
-          
-**Status:** ` + statusMessage + `  
-**Exit Code:** ` + exitCode + `  
-**Issues Found:** ` + issuesFound + `  
-**Vulnerabilities:** ` + vulnsFound + `  
-
-<details>
-<summary>📄 Detailed Scan Results</summary>
-
-\`\`\`
-` + scanOutput + `
-\`\`\`
-
-</details>
-
----
-*Scan performed by [PHPCop](https://github.com/hfryan/php-cop) 🚓*`;
+          const commentBody = '## ' + statusEmoji + ' PHPCop Security Scan Results\n\n' +
+            '**Status:** ' + statusMessage + '\n' +
+            '**Exit Code:** ' + exitCode + '\n' +
+            '**Issues Found:** ' + issuesFound + '\n' +
+            '**Vulnerabilities:** ' + vulnsFound + '\n\n' +
+            '<details>\n<summary>📄 Detailed Scan Results</summary>\n\n' +
+            '```\n' + scanOutput + '\n```\n\n</details>\n\n' +
+            '---\n*Scan performed by [PHPCop](https://github.com/hfryan/php-cop) 🚓*';
           
           // Post comment
           await github.rest.issues.createComment({
