@@ -222,18 +222,18 @@ runs:
           }
           
           // Create comment body
-          const commentBody = `## ${statusEmoji} PHPCop Security Scan Results
+          const commentBody = `## ` + statusEmoji + ` PHPCop Security Scan Results
           
-**Status:** ${statusMessage}  
-**Exit Code:** ${exitCode}  
-**Issues Found:** ${issuesFound}  
-**Vulnerabilities:** ${vulnsFound}  
+**Status:** ` + statusMessage + `  
+**Exit Code:** ` + exitCode + `  
+**Issues Found:** ` + issuesFound + `  
+**Vulnerabilities:** ` + vulnsFound + `  
 
 <details>
 <summary>📄 Detailed Scan Results</summary>
 
 \`\`\`
-${scanOutput}
+` + scanOutput + `
 \`\`\`
 
 </details>
