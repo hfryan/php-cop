@@ -95,25 +95,26 @@ runs:
         coverage: none
         tools: composer
     
-    - name: Download PHPCop PHAR  
+    - name: Build PHPCop PHAR from Source
       shell: bash
       run: |
         cd "${{ inputs.working-directory }}"
-        echo "🔽 Downloading PHPCop..."
+        echo "🔨 Building PHPCop from source (testing mode)..."
         
-        # For testing, try to download from releases first, fallback to building from source
-        if curl -sL https://github.com/hfryan/php-cop/releases/latest/download/phpcop.phar -o phpcop.phar; then
-          echo "✅ Downloaded PHPCop from releases"
+        # For testing the GitHub Action, build from current source
+        # In production, this would download from releases
+        composer install --no-dev --optimize-autoloader
+        php -d phar.readonly=0 build-phar.php
+        
+        # Verify PHAR was built correctly
+        if [ -f "phpcop.phar" ] && [ $(stat -f%z phpcop.phar 2>/dev/null || stat -c%s phpcop.phar) -gt 1000000 ]; then
+          echo "✅ PHPCop PHAR built successfully ($(ls -lh phpcop.phar | awk '{print $5}'))"
+          chmod +x phpcop.phar
         else
-          echo "⚠️ Release not found, building from source..."
-          # Build PHAR from current source (for testing)
-          composer install --no-dev --optimize-autoloader
-          php -d phar.readonly=0 build-phar.php
-          echo "✅ Built PHPCop from source"
+          echo "❌ PHPCop PHAR build failed or file too small"
+          ls -la phpcop.phar
+          exit 1
         fi
-        
-        chmod +x phpcop.phar
-        echo "✅ PHPCop ready"
         
     - name: Verify composer.lock exists
       shell: bash
