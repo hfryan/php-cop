@@ -95,14 +95,25 @@ runs:
         coverage: none
         tools: composer
     
-    - name: Download PHPCop PHAR
+    - name: Download PHPCop PHAR  
       shell: bash
       run: |
         cd "${{ inputs.working-directory }}"
         echo "🔽 Downloading PHPCop..."
-        curl -sL https://github.com/hfryan/php-cop/releases/latest/download/phpcop.phar -o phpcop.phar
+        
+        # For testing, try to download from releases first, fallback to building from source
+        if curl -sL https://github.com/hfryan/php-cop/releases/latest/download/phpcop.phar -o phpcop.phar; then
+          echo "✅ Downloaded PHPCop from releases"
+        else
+          echo "⚠️ Release not found, building from source..."
+          # Build PHAR from current source (for testing)
+          composer install --no-dev --optimize-autoloader
+          php -d phar.readonly=0 build-phar.php
+          echo "✅ Built PHPCop from source"
+        fi
+        
         chmod +x phpcop.phar
-        echo "✅ PHPCop downloaded successfully"
+        echo "✅ PHPCop ready"
         
     - name: Verify composer.lock exists
       shell: bash
@@ -142,6 +153,15 @@ runs:
         
         # Run scan and capture output
         echo "🔍 Debug: Running PHPCop scan..."
+        echo "🔍 Debug: PHPCop version check..."
+        php phpcop.phar --version
+        echo "🔍 Debug: PHPCop help..."
+        php phpcop.phar scan --help | head -10
+        
+        # Try with verbose output first
+        echo "🔍 Debug: Trying verbose scan..."
+        php phpcop.phar scan $ARGS -vvv 2>&1 || true
+        
         SCAN_OUTPUT=$(php phpcop.phar scan $ARGS 2>&1) || SCAN_EXIT_CODE=$?
         SCAN_EXIT_CODE=${SCAN_EXIT_CODE:-0}
         
