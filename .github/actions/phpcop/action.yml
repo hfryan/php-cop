@@ -108,6 +108,9 @@ runs:
       shell: bash
       run: |
         cd "${{ inputs.working-directory }}"
+        echo "🔍 Current directory: $(pwd)"
+        echo "📁 Directory contents:"
+        ls -la
         if [ ! -f "composer.lock" ]; then
           echo "❌ composer.lock not found in ${{ inputs.working-directory }}"
           echo "💡 Make sure to run 'composer install' before PHPCop scan"
@@ -138,8 +141,13 @@ runs:
         echo "Command: php phpcop.phar scan$ARGS"
         
         # Run scan and capture output
+        echo "🔍 Debug: Running PHPCop scan..."
         SCAN_OUTPUT=$(php phpcop.phar scan $ARGS 2>&1) || SCAN_EXIT_CODE=$?
         SCAN_EXIT_CODE=${SCAN_EXIT_CODE:-0}
+        
+        echo "🔍 Debug: Raw scan output:"
+        echo "$SCAN_OUTPUT"
+        echo "🔍 Debug: Exit code: $SCAN_EXIT_CODE"
         
         # Save outputs
         echo "exit-code=$SCAN_EXIT_CODE" >> $GITHUB_OUTPUT
@@ -153,9 +161,9 @@ runs:
           php phpcop.phar scan --format=html --quiet > phpcop-report.html 2>/dev/null || true
         fi
         
-        # Count issues for outputs
-        ISSUES_COUNT=$(echo "$SCAN_OUTPUT" | grep -c "^•" || echo "0")
-        VULNS_COUNT=$(echo "$SCAN_OUTPUT" | grep -c "🚨" || echo "0")
+        # Count issues for outputs (handle empty results properly)
+        ISSUES_COUNT=$(echo "$SCAN_OUTPUT" | grep -c "^•" 2>/dev/null || echo "0")
+        VULNS_COUNT=$(echo "$SCAN_OUTPUT" | grep -c "🚨" 2>/dev/null || echo "0")
         
         echo "issues-found=$ISSUES_COUNT" >> $GITHUB_OUTPUT
         echo "vulnerabilities-found=$VULNS_COUNT" >> $GITHUB_OUTPUT
