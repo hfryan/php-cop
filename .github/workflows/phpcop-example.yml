@@ -1,0 +1,78 @@
+# Example PHPCop Security Scan Workflow
+# Copy this file to your repository at .github/workflows/security.yml
+
+name: 🚓 Security Scan
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  security-scan:
+    name: PHPCop Security Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          coverage: none
+          tools: composer
+      
+      - name: Install Dependencies
+        run: composer install --no-dev --prefer-dist --no-progress --no-suggest
+      
+      - name: PHPCop Security Scan
+        uses: hfryan/php-cop@main
+        with:
+          # Fail build on high/critical vulnerabilities
+          fail-on: 'high'
+          
+          # Exclude development dependencies
+          exclude-dev: true
+          
+          # Only show moderate+ vulnerabilities in output
+          min-severity: 'moderate'
+          
+          # Flag packages stale after 12 months
+          stale-months: 12
+          
+          # Post results as PR comment (if applicable)
+          comment-pr: true
+          
+          # Upload detailed reports as artifacts
+          upload-artifacts: true
+
+  # Optional: Run additional scan for dev dependencies
+  dev-dependencies-scan:
+    name: Dev Dependencies Check
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Don't fail build for dev dependency issues
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          coverage: none
+          tools: composer
+      
+      - name: Install All Dependencies
+        run: composer install --prefer-dist --no-progress --no-suggest
+      
+      - name: Scan Dev Dependencies
+        uses: hfryan/php-cop@main
+        with:
+          only-dev: true
+          fail-on: 'critical'  # More lenient for dev deps
+          comment-pr: false     # Don't comment for dev deps
+          upload-artifacts: false
