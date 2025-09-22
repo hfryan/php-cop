@@ -231,7 +231,95 @@ phpcop scan --exit-code=legacy --fail-on=high
 echo "Exit code: $?"
 ```
 
-### GitHub Actions Example
+### GitHub Actions Integration
+
+PHPCop provides a pre-built GitHub Action for seamless CI/CD integration:
+
+#### Quick Setup (Recommended)
+
+```yaml
+name: Security Scan
+on: [push, pull_request]
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Dependencies
+        run: composer install --no-dev
+        
+      - name: PHPCop Security Scan
+        uses: hfryan/php-cop@main
+        with:
+          fail-on: 'high'
+          exclude-dev: true
+          comment-pr: true
+```
+
+#### Advanced Configuration
+
+```yaml
+- name: Comprehensive Security Scan
+  uses: hfryan/php-cop@main
+  with:
+    format: 'json'
+    fail-on: 'moderate'
+    stale-months: 12
+    min-severity: 'moderate'
+    exclude-dev: true
+    ignore-packages: 'symfony/polyfill-*,psr/log'
+    license-allowlist: 'MIT,Apache-2.0,BSD-3-Clause'
+    comment-pr: true
+    upload-artifacts: true
+    working-directory: './backend'
+```
+
+#### Action Inputs
+
+| Input | Default | Description |
+|-------|---------|-------------|
+| `format` | `table` | Output format: `table`, `json`, `md`, `html` |
+| `fail-on` | `high` | Minimum severity to fail: `low`, `moderate`, `high`, `critical` |
+| `stale-months` | `18` | Months to flag packages as stale |
+| `exclude-dev` | `false` | Exclude dev dependencies from scan |
+| `only-dev` | `false` | Only scan dev dependencies |
+| `min-severity` | `low` | Minimum vulnerability severity to report |
+| `ignore-packages` | `''` | Comma-separated packages to ignore |
+| `license-allowlist` | `''` | Comma-separated allowed licenses |
+| `license-denylist` | `''` | Comma-separated denied licenses |
+| `exit-code` | `enhanced` | Exit code behavior: `legacy`, `enhanced` |
+| `comment-pr` | `true` | Post scan results as PR comment |
+| `upload-artifacts` | `true` | Upload reports as artifacts |
+| `working-directory` | `.` | Directory to run scan in |
+
+#### Action Outputs
+
+| Output | Description |
+|--------|-------------|
+| `exit-code` | The exit code from PHPCop scan |
+| `issues-found` | Number of issues found |
+| `vulnerabilities-found` | Number of vulnerabilities found |
+| `report-file` | Path to the generated report file |
+
+#### Using Outputs
+
+```yaml
+- name: PHPCop Scan
+  id: phpcop
+  uses: hfryan/php-cop@main
+  with:
+    fail-on: 'critical'
+    
+- name: Handle Results
+  run: |
+    echo "Exit code: ${{ steps.phpcop.outputs.exit-code }}"
+    echo "Issues found: ${{ steps.phpcop.outputs.issues-found }}"
+    echo "Vulnerabilities: ${{ steps.phpcop.outputs.vulnerabilities-found }}"
+```
+
+#### Manual PHAR Download (Alternative)
 
 ```yaml
 - name: Security Scan
