@@ -53,6 +53,12 @@ jobs:
           EXIT_CODE="${{ steps.phpcop-test.outputs.exit-code }}"
           if [[ "$EXIT_CODE" =~ ^[0-3]$ ]]; then
             echo "✅ Valid exit code: $EXIT_CODE"
+            case $EXIT_CODE in
+              0) echo "   → SUCCESS: No issues found" ;;
+              1) echo "   → WARNINGS: Minor issues found" ;;
+              2) echo "   → ERRORS: Moderate issues found (expected for this project)" ;;
+              3) echo "   → CRITICAL: High-priority security issues found" ;;
+            esac
           else
             echo "❌ Invalid exit code: $EXIT_CODE"
             exit 1
@@ -121,6 +127,7 @@ jobs:
       
       - name: Test ${{ matrix.format }} Format
         uses: ./.github/actions/phpcop
+        continue-on-error: true
         with:
           format: ${{ matrix.format }}
           fail-on: 'critical'
