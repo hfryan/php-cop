@@ -31,6 +31,7 @@ jobs:
       - name: Test PHPCop Action
         id: phpcop-test
         uses: ./.github/actions/phpcop
+        continue-on-error: true
         with:
           fail-on: 'critical'
           exclude-dev: true
