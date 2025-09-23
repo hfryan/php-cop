@@ -268,7 +268,7 @@ runs:
       if: inputs.upload-artifacts == 'true'
       uses: actions/upload-artifact@v4
       with:
-        name: phpcop-security-reports
+        name: phpcop-security-reports-${{ github.run_id }}-${{ github.run_attempt }}
         path: |
           ${{ inputs.working-directory }}/phpcop-output.txt
           ${{ inputs.working-directory }}/phpcop-report.json
