@@ -120,9 +120,6 @@ runs:
       shell: bash
       run: |
         cd "${{ inputs.working-directory }}"
-        echo "🔍 Current directory: $(pwd)"
-        echo "📁 Directory contents:"
-        ls -la
         if [ ! -f "composer.lock" ]; then
           echo "❌ composer.lock not found in ${{ inputs.working-directory }}"
           echo "💡 Make sure to run 'composer install' before PHPCop scan"
@@ -137,7 +134,7 @@ runs:
         cd "${{ inputs.working-directory }}"
         
         # Build command arguments
-        ARGS=""
+        ARGS="--quiet"  # Use quiet mode for cleaner CI output
         [ "${{ inputs.format }}" != "table" ] && ARGS="$ARGS --format=${{ inputs.format }}"
         [ "${{ inputs.fail-on }}" != "high" ] && ARGS="$ARGS --fail-on=${{ inputs.fail-on }}"
         [ "${{ inputs.stale-months }}" != "18" ] && ARGS="$ARGS --stale-months=${{ inputs.stale-months }}"
@@ -153,22 +150,8 @@ runs:
         echo "Command: php phpcop.phar scan$ARGS"
         
         # Run scan and capture output
-        echo "🔍 Debug: Running PHPCop scan..."
-        echo "🔍 Debug: PHPCop version check..."
-        php phpcop.phar --version
-        echo "🔍 Debug: PHPCop help..."
-        php phpcop.phar scan --help | head -10
-        
-        # Try with verbose output first
-        echo "🔍 Debug: Trying verbose scan..."
-        php phpcop.phar scan $ARGS -vvv 2>&1 || true
-        
         SCAN_OUTPUT=$(php phpcop.phar scan $ARGS 2>&1) || SCAN_EXIT_CODE=$?
         SCAN_EXIT_CODE=${SCAN_EXIT_CODE:-0}
-        
-        echo "🔍 Debug: Raw scan output:"
-        echo "$SCAN_OUTPUT"
-        echo "🔍 Debug: Exit code: $SCAN_EXIT_CODE"
         
         # Save outputs
         echo "exit-code=$SCAN_EXIT_CODE" >> $GITHUB_OUTPUT
