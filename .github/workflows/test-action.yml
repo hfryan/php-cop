@@ -39,6 +39,7 @@ jobs:
           comment-pr: true
           upload-artifacts: true
           format: 'table'
+          exit-code: 'legacy'
       
       - name: Display Test Results
         run: |
@@ -133,3 +134,4 @@ jobs:
           fail-on: 'critical'
           comment-pr: false
           upload-artifacts: true
+          exit-code: 'legacy'

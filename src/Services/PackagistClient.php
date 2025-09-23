@@ -127,8 +127,31 @@ final class PackagistClient {
 
     private function processPackageData(string $name, array $data): array {
         $versions = $data['packages'][$name] ?? [];
-        usort($versions, fn($a,$b) => strcmp($b['version_normalized'], $a['version_normalized']));
-        $latest = $versions[0] ?? [];
+        
+        // Sort versions using proper semantic version comparison
+        // Filter out non-stable versions and sort by version_normalized
+        $stableVersions = array_filter($versions, function($version) {
+            // Only include stable versions (no dev, alpha, beta, RC unless no stable versions exist)
+            $versionString = $version['version'] ?? '';
+            return !preg_match('/-(dev|alpha|beta|rc|RC)/i', $versionString);
+        });
+        
+        // If no stable versions, use all versions
+        if (empty($stableVersions)) {
+            $stableVersions = $versions;
+        }
+        
+        // Sort using semantic version comparison on normalized versions
+        usort($stableVersions, function($a, $b) {
+            $aVersion = $a['version_normalized'] ?? '0.0.0.0';
+            $bVersion = $b['version_normalized'] ?? '0.0.0.0';
+            
+            // Convert normalized version to comparable format
+            // Packagist normalizes versions to x.y.z.w format
+            return version_compare($bVersion, $aVersion);
+        });
+        
+        $latest = $stableVersions[0] ?? [];
         $abandoned = $latest['abandoned'] ?? false;
         $license = $latest['license'][0] ?? null;
         $time = $latest['time'] ?? null;

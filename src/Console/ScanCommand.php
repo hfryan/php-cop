@@ -111,7 +111,7 @@ final class ScanCommand extends Command
 
             $latestNorm = $info['latest']['version_normalized'] ?? null;
             $latestDisp = $info['latest']['version'] ?? null;
-            $isOutdated = $latestNorm && $latestDisp && $version !== $latestDisp;
+            $isOutdated = $latestNorm && $latestDisp && version_compare($version, $latestDisp, '<');
 
             $abandoned = $info['abandoned'] ?? false;
 
