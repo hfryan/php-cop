@@ -48,19 +48,10 @@ jobs:
           echo "Issues Found: '${{ steps.phpcop-test.outputs.issues-found }}'"
           echo "Vulnerabilities: '${{ steps.phpcop-test.outputs.vulnerabilities-found }}'"
           echo "Report File: '${{ steps.phpcop-test.outputs.report-file }}'"
-          echo ""
-          echo "🔍 DEBUG: All step outputs:"
-          echo "steps.phpcop-test.outputs: ${{ toJSON(steps.phpcop-test.outputs) }}"
-          echo "steps.phpcop-test.conclusion: ${{ steps.phpcop-test.conclusion }}"
-          echo "steps.phpcop-test.outcome: ${{ steps.phpcop-test.outcome }}"
       
       - name: Validate Exit Code
         run: |
-          EXIT_CODE="${{ steps.phpcop-test.outputs.exit-code }}"
-          echo "DEBUG: Received exit code: '$EXIT_CODE'"
-          echo "DEBUG: Exit code length: ${#EXIT_CODE}"
-          echo "DEBUG: Exit code hex: $(echo -n "$EXIT_CODE" | xxd -p)"
-          
+          EXIT_CODE="${{ steps.phpcop-test.outputs.exit-code }}"          
           if [[ "$EXIT_CODE" =~ ^[0-3]$ ]]; then
             echo "✅ Valid exit code: $EXIT_CODE"
             case $EXIT_CODE in

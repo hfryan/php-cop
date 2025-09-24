@@ -282,11 +282,18 @@ runs:
       run: |
         cd "${{ inputs.working-directory }}"
         
+        echo "🔧 DEBUG: Setting outputs, current directory: $(pwd)"
+        echo "🔧 DEBUG: Files present: $(ls -la phpcop_* 2>/dev/null || echo 'No phpcop_* files found')"
+        
         EXIT_CODE=$(cat phpcop_exit_code 2>/dev/null || echo "0")
         ISSUES_COUNT=$(cat phpcop_issues_count 2>/dev/null || echo "0") 
         VULNS_COUNT=$(cat phpcop_vulns_count 2>/dev/null || echo "0")
+        
+        echo "🔧 DEBUG: Read values - EXIT_CODE='$EXIT_CODE', ISSUES_COUNT='$ISSUES_COUNT', VULNS_COUNT='$VULNS_COUNT'"
         
         echo "exit-code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
         echo "issues-found=$ISSUES_COUNT" >> "$GITHUB_OUTPUT"
         echo "vulnerabilities-found=$VULNS_COUNT" >> "$GITHUB_OUTPUT"
         echo "report-file=phpcop-output.txt" >> "$GITHUB_OUTPUT"
+        
+        echo "🔧 DEBUG: Outputs written to GITHUB_OUTPUT"
