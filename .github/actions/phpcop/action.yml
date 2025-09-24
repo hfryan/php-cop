@@ -179,6 +179,11 @@ runs:
         echo "PHPCOP_ISSUES_FOUND=$ISSUES_COUNT" >> "$GITHUB_ENV"
         echo "PHPCOP_VULNS_FOUND=$VULNS_COUNT" >> "$GITHUB_ENV"
         
+        # Also write to temporary files for the output step
+        echo "$SCAN_EXIT_CODE" > /tmp/phpcop_exit_code
+        echo "$ISSUES_COUNT" > /tmp/phpcop_issues_count
+        echo "$VULNS_COUNT" > /tmp/phpcop_vulns_count
+        
         # Display results
         echo "📋 Scan Results:"
         echo "   Exit Code: $SCAN_EXIT_CODE"
@@ -275,7 +280,11 @@ runs:
     - name: Set Composite Action Outputs
       shell: bash
       run: |
-        echo "exit-code=${PHPCOP_EXIT_CODE}" >> "$GITHUB_OUTPUT"
-        echo "issues-found=${PHPCOP_ISSUES_FOUND}" >> "$GITHUB_OUTPUT"
-        echo "vulnerabilities-found=${PHPCOP_VULNS_FOUND}" >> "$GITHUB_OUTPUT"
+        EXIT_CODE=$(cat /tmp/phpcop_exit_code)
+        ISSUES_COUNT=$(cat /tmp/phpcop_issues_count)
+        VULNS_COUNT=$(cat /tmp/phpcop_vulns_count)
+        
+        echo "exit-code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
+        echo "issues-found=$ISSUES_COUNT" >> "$GITHUB_OUTPUT"
+        echo "vulnerabilities-found=$VULNS_COUNT" >> "$GITHUB_OUTPUT"
         echo "report-file=phpcop-output.txt" >> "$GITHUB_OUTPUT"
