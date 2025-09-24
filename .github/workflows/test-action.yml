@@ -44,10 +44,15 @@ jobs:
       - name: Display Test Results
         run: |
           echo "🧪 PHPCop Action Test Results:"
-          echo "Exit Code: ${{ steps.phpcop-test.outputs.exit-code }}"
-          echo "Issues Found: ${{ steps.phpcop-test.outputs.issues-found }}"
-          echo "Vulnerabilities: ${{ steps.phpcop-test.outputs.vulnerabilities-found }}"
-          echo "Report File: ${{ steps.phpcop-test.outputs.report-file }}"
+          echo "Exit Code: '${{ steps.phpcop-test.outputs.exit-code }}'"
+          echo "Issues Found: '${{ steps.phpcop-test.outputs.issues-found }}'"
+          echo "Vulnerabilities: '${{ steps.phpcop-test.outputs.vulnerabilities-found }}'"
+          echo "Report File: '${{ steps.phpcop-test.outputs.report-file }}'"
+          echo ""
+          echo "🔍 DEBUG: All step outputs:"
+          echo "steps.phpcop-test.outputs: ${{ toJSON(steps.phpcop-test.outputs) }}"
+          echo "steps.phpcop-test.conclusion: ${{ steps.phpcop-test.conclusion }}"
+          echo "steps.phpcop-test.outcome: ${{ steps.phpcop-test.outcome }}"
       
       - name: Validate Exit Code
         run: |

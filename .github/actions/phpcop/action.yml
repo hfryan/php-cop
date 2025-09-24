@@ -88,6 +88,16 @@ outputs:
 runs:
   using: 'composite'
   steps:
+    - name: Debug Action Start
+      shell: bash
+      run: |
+        echo "🚀 DEBUG: PHPCop Action starting"
+        echo "🚀 DEBUG: Working directory input: '${{ inputs.working-directory }}'"
+        echo "🚀 DEBUG: Format input: '${{ inputs.format }}'"
+        echo "🚀 DEBUG: Current directory: $(pwd)"
+        echo "🚀 DEBUG: Environment variables:"
+        env | grep -E "(GITHUB_|RUNNER_)" | head -5
+        
     - name: Setup PHP
       uses: shivammathur/setup-php@v2
       with:
