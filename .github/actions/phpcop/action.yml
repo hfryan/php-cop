@@ -277,23 +277,18 @@ runs:
         retention-days: 30
         if-no-files-found: ignore
     
-    - name: Set Composite Action Outputs
+    - name: Set Composite Action Outputs  
       shell: bash
       run: |
-        cd "${{ inputs.working-directory }}"
+        echo "🔧 DEBUG: Environment variables:"
+        echo "PHPCOP_EXIT_CODE='${PHPCOP_EXIT_CODE}'"
+        echo "PHPCOP_ISSUES_FOUND='${PHPCOP_ISSUES_FOUND}'"
+        echo "PHPCOP_VULNS_FOUND='${PHPCOP_VULNS_FOUND}'"
         
-        echo "🔧 DEBUG: Setting outputs, current directory: $(pwd)"
-        echo "🔧 DEBUG: Files present: $(ls -la phpcop_* 2>/dev/null || echo 'No phpcop_* files found')"
-        
-        EXIT_CODE=$(cat phpcop_exit_code 2>/dev/null || echo "0")
-        ISSUES_COUNT=$(cat phpcop_issues_count 2>/dev/null || echo "0") 
-        VULNS_COUNT=$(cat phpcop_vulns_count 2>/dev/null || echo "0")
-        
-        echo "🔧 DEBUG: Read values - EXIT_CODE='$EXIT_CODE', ISSUES_COUNT='$ISSUES_COUNT', VULNS_COUNT='$VULNS_COUNT'"
-        
-        echo "exit-code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
-        echo "issues-found=$ISSUES_COUNT" >> "$GITHUB_OUTPUT"
-        echo "vulnerabilities-found=$VULNS_COUNT" >> "$GITHUB_OUTPUT"
+        echo "exit-code=${PHPCOP_EXIT_CODE:-0}" >> "$GITHUB_OUTPUT"
+        echo "issues-found=${PHPCOP_ISSUES_FOUND:-0}" >> "$GITHUB_OUTPUT"
+        echo "vulnerabilities-found=${PHPCOP_VULNS_FOUND:-0}" >> "$GITHUB_OUTPUT"
         echo "report-file=phpcop-output.txt" >> "$GITHUB_OUTPUT"
         
-        echo "🔧 DEBUG: Outputs written to GITHUB_OUTPUT"
+        echo "🔧 DEBUG: Final GITHUB_OUTPUT contents:"
+        cat "$GITHUB_OUTPUT"
