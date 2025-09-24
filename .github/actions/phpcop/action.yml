@@ -192,15 +192,20 @@ runs:
         fi
         
         # Count issues for outputs (handle empty results properly)
-        ISSUES_COUNT=$(echo "$SCAN_OUTPUT" | grep -c "^•" 2>/dev/null || echo "0")
-        VULNS_COUNT=$(echo "$SCAN_OUTPUT" | grep -c "🚨" 2>/dev/null || echo "0")
+        # Use only the first line count and clean any extra whitespace
+        ISSUES_COUNT=$(echo "$SCAN_OUTPUT" | grep -c "^•" 2>/dev/null | head -1 | tr -d ' \t\r\n' || echo "0")
+        VULNS_COUNT=$(echo "$SCAN_OUTPUT" | grep -c "🚨" 2>/dev/null | head -1 | tr -d ' \t\r\n' || echo "0")
         
         echo "DEBUG: Raw ISSUES_COUNT: '$ISSUES_COUNT'"
         echo "DEBUG: Raw VULNS_COUNT: '$VULNS_COUNT'"
         
-        # Just ensure they are integers - grep -c should already return clean integers
-        ISSUES_COUNT=${ISSUES_COUNT:-0}
-        VULNS_COUNT=${VULNS_COUNT:-0}
+        # Ensure they are single integers
+        if [[ ! "$ISSUES_COUNT" =~ ^[0-9]+$ ]]; then
+          ISSUES_COUNT=0
+        fi
+        if [[ ! "$VULNS_COUNT" =~ ^[0-9]+$ ]]; then
+          VULNS_COUNT=0
+        fi
         
         echo "DEBUG: Final ISSUES_COUNT: '$ISSUES_COUNT'"
         echo "DEBUG: Final VULNS_COUNT: '$VULNS_COUNT'"
