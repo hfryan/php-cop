@@ -75,15 +75,19 @@ inputs:
 outputs:
   exit-code:
     description: 'The exit code from PHPCop scan'
+    value: ${{ steps.outputs.outputs.exit-code }}
   
   issues-found:
     description: 'Number of issues found'
+    value: ${{ steps.outputs.outputs.issues-found }}
   
   vulnerabilities-found:
     description: 'Number of vulnerabilities found'
+    value: ${{ steps.outputs.outputs.vulnerabilities-found }}
   
   report-file:
     description: 'Path to the generated report file'
+    value: ${{ steps.outputs.outputs.report-file }}
 
 runs:
   using: 'composite'
@@ -278,17 +282,10 @@ runs:
         if-no-files-found: ignore
     
     - name: Set Composite Action Outputs  
+      id: outputs
       shell: bash
       run: |
-        echo "🔧 DEBUG: Environment variables:"
-        echo "PHPCOP_EXIT_CODE='${PHPCOP_EXIT_CODE}'"
-        echo "PHPCOP_ISSUES_FOUND='${PHPCOP_ISSUES_FOUND}'"
-        echo "PHPCOP_VULNS_FOUND='${PHPCOP_VULNS_FOUND}'"
-        
         echo "exit-code=${PHPCOP_EXIT_CODE:-0}" >> "$GITHUB_OUTPUT"
-        echo "issues-found=${PHPCOP_ISSUES_FOUND:-0}" >> "$GITHUB_OUTPUT"
+        echo "issues-found=${PHPCOP_ISSUES_FOUND:-0}" >> "$GITHUB_OUTPUT"  
         echo "vulnerabilities-found=${PHPCOP_VULNS_FOUND:-0}" >> "$GITHUB_OUTPUT"
         echo "report-file=phpcop-output.txt" >> "$GITHUB_OUTPUT"
-        
-        echo "🔧 DEBUG: Final GITHUB_OUTPUT contents:"
-        cat "$GITHUB_OUTPUT"
