@@ -88,16 +88,6 @@ outputs:
 runs:
   using: 'composite'
   steps:
-    - name: Debug Action Start
-      shell: bash
-      run: |
-        echo "🚀 DEBUG: PHPCop Action starting"
-        echo "🚀 DEBUG: Working directory input: '${{ inputs.working-directory }}'"
-        echo "🚀 DEBUG: Format input: '${{ inputs.format }}'"
-        echo "🚀 DEBUG: Current directory: $(pwd)"
-        echo "🚀 DEBUG: Environment variables:"
-        env | grep -E "(GITHUB_|RUNNER_)" | head -5
-        
     - name: Setup PHP
       uses: shivammathur/setup-php@v2
       with:
@@ -141,13 +131,10 @@ runs:
       shell: bash
       id: scan
       run: |
-        echo "🔍 DEBUG: Starting PHPCop Scan step"
         cd "${{ inputs.working-directory }}"
-        echo "🔍 DEBUG: Changed to directory: $(pwd)"
         
         # Build command arguments
         ARGS="--quiet"  # Use quiet mode for cleaner CI output
-        echo "🔍 DEBUG: Initial ARGS: '$ARGS'"
         [ "${{ inputs.format }}" != "table" ] && ARGS="$ARGS --format=${{ inputs.format }}"
         [ "${{ inputs.fail-on }}" != "high" ] && ARGS="$ARGS --fail-on=${{ inputs.fail-on }}"
         [ "${{ inputs.stale-months }}" != "18" ] && ARGS="$ARGS --stale-months=${{ inputs.stale-months }}"
@@ -166,20 +153,6 @@ runs:
         SCAN_OUTPUT=$(php phpcop.phar scan $ARGS 2>&1) || SCAN_EXIT_CODE=$?
         SCAN_EXIT_CODE=${SCAN_EXIT_CODE:-0}
         
-        # Debug exit code before cleaning
-        echo "DEBUG: Raw exit code: '$SCAN_EXIT_CODE'"
-        echo "DEBUG: Exit code hex dump: $(echo -n "$SCAN_EXIT_CODE" | xxd -p)"
-        
-        # Clean exit code (remove any whitespace but keep digits)
-        SCAN_EXIT_CODE=$(echo "$SCAN_EXIT_CODE" | tr -d '\r\n \t')
-        # If it's not a single digit 0-9, default to 0
-        if [[ ! "$SCAN_EXIT_CODE" =~ ^[0-9]+$ ]]; then
-          SCAN_EXIT_CODE=0
-        fi
-        
-        # Debug after cleaning
-        echo "DEBUG: Cleaned exit code: '$SCAN_EXIT_CODE'"
-        
         # Save output to file
         echo "$SCAN_OUTPUT" > phpcop-output.txt
         
@@ -192,52 +165,23 @@ runs:
         fi
         
         # Count issues for outputs (handle empty results properly)
-        # Use only the first line count and clean any extra whitespace
-        ISSUES_COUNT=$(echo "$SCAN_OUTPUT" | grep -c "^•" 2>/dev/null | head -1 | tr -d ' \t\r\n' || echo "0")
-        VULNS_COUNT=$(echo "$SCAN_OUTPUT" | grep -c "🚨" 2>/dev/null | head -1 | tr -d ' \t\r\n' || echo "0")
+        ISSUES_COUNT=$(echo "$SCAN_OUTPUT" | grep -c "^•" 2>/dev/null || echo "0")
+        VULNS_COUNT=$(echo "$SCAN_OUTPUT" | grep -c "🚨" 2>/dev/null || echo "0")
         
-        echo "DEBUG: Raw ISSUES_COUNT: '$ISSUES_COUNT'"
-        echo "DEBUG: Raw VULNS_COUNT: '$VULNS_COUNT'"
+        # Ensure single digit counts
+        ISSUES_COUNT=$(echo "$ISSUES_COUNT" | cut -c1)
+        VULNS_COUNT=$(echo "$VULNS_COUNT" | cut -c1)
         
-        # Ensure they are single integers
-        if [[ ! "$ISSUES_COUNT" =~ ^[0-9]+$ ]]; then
-          ISSUES_COUNT=0
-        fi
-        if [[ ! "$VULNS_COUNT" =~ ^[0-9]+$ ]]; then
-          VULNS_COUNT=0
-        fi
-        
-        echo "DEBUG: Final ISSUES_COUNT: '$ISSUES_COUNT'"
-        echo "DEBUG: Final VULNS_COUNT: '$VULNS_COUNT'"
-        
-        # Set GitHub Actions outputs and environment variables
-        echo "DEBUG: About to write outputs - SCAN_EXIT_CODE='$SCAN_EXIT_CODE'"
-        echo "DEBUG: GITHUB_OUTPUT file: '$GITHUB_OUTPUT'"
-        
-        # Ensure exit code is set
-        SCAN_EXIT_CODE=${SCAN_EXIT_CODE:-0}
-        
-        {
-          echo "exit-code=$SCAN_EXIT_CODE"
-          echo "issues-found=$ISSUES_COUNT"
-          echo "vulnerabilities-found=$VULNS_COUNT"
-          echo "report-file=phpcop-output.txt"
-        } >> "$GITHUB_OUTPUT"
-        
-        # Also set as environment variables for use in subsequent steps
+        # Set environment variables for use in subsequent steps  
         {
           echo "PHPCOP_EXIT_CODE=$SCAN_EXIT_CODE"
           echo "PHPCOP_ISSUES_FOUND=$ISSUES_COUNT"  
           echo "PHPCOP_VULNS_FOUND=$VULNS_COUNT"
         } >> "$GITHUB_ENV"
         
-        echo "DEBUG: Outputs written to file"
-        echo "DEBUG: Contents of GITHUB_OUTPUT:"
-        cat "$GITHUB_OUTPUT" || echo "ERROR: Could not read GITHUB_OUTPUT file"
-        
         # Display results
         echo "📋 Scan Results:"
-        echo "   Exit Code: '$SCAN_EXIT_CODE' (length: ${#SCAN_EXIT_CODE})"
+        echo "   Exit Code: $SCAN_EXIT_CODE"
         echo "   Issues Found: $ISSUES_COUNT"
         echo "   Vulnerabilities: $VULNS_COUNT"
         
@@ -327,3 +271,11 @@ runs:
           ${{ inputs.working-directory }}/phpcop-report.html
         retention-days: 30
         if-no-files-found: ignore
+    
+    - name: Set Composite Action Outputs
+      shell: bash
+      run: |
+        echo "exit-code=${PHPCOP_EXIT_CODE}" >> "$GITHUB_OUTPUT"
+        echo "issues-found=${PHPCOP_ISSUES_FOUND}" >> "$GITHUB_OUTPUT"
+        echo "vulnerabilities-found=${PHPCOP_VULNS_FOUND}" >> "$GITHUB_OUTPUT"
+        echo "report-file=phpcop-output.txt" >> "$GITHUB_OUTPUT"
