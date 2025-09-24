@@ -129,12 +129,14 @@ runs:
     
     - name: Run PHPCop Scan
       shell: bash
-      id: scan
       run: |
+        echo "🔍 DEBUG: Starting PHPCop Scan step"
         cd "${{ inputs.working-directory }}"
+        echo "🔍 DEBUG: Changed to directory: $(pwd)"
         
         # Build command arguments
         ARGS="--quiet"  # Use quiet mode for cleaner CI output
+        echo "🔍 DEBUG: Initial ARGS: '$ARGS'"
         [ "${{ inputs.format }}" != "table" ] && ARGS="$ARGS --format=${{ inputs.format }}"
         [ "${{ inputs.fail-on }}" != "high" ] && ARGS="$ARGS --fail-on=${{ inputs.fail-on }}"
         [ "${{ inputs.stale-months }}" != "18" ] && ARGS="$ARGS --stale-months=${{ inputs.stale-months }}"
@@ -190,7 +192,7 @@ runs:
         ISSUES_COUNT=${ISSUES_COUNT:-0}
         VULNS_COUNT=${VULNS_COUNT:-0}
         
-        # Set GitHub Actions outputs
+        # Set GitHub Actions outputs and environment variables
         echo "DEBUG: About to write outputs - SCAN_EXIT_CODE='$SCAN_EXIT_CODE'"
         echo "DEBUG: GITHUB_OUTPUT file: '$GITHUB_OUTPUT'"
         
@@ -203,6 +205,13 @@ runs:
           echo "vulnerabilities-found=$VULNS_COUNT"
           echo "report-file=phpcop-output.txt"
         } >> "$GITHUB_OUTPUT"
+        
+        # Also set as environment variables for use in subsequent steps
+        {
+          echo "PHPCOP_EXIT_CODE=$SCAN_EXIT_CODE"
+          echo "PHPCOP_ISSUES_FOUND=$ISSUES_COUNT"  
+          echo "PHPCOP_VULNS_FOUND=$VULNS_COUNT"
+        } >> "$GITHUB_ENV"
         
         echo "DEBUG: Outputs written to file"
         echo "DEBUG: Contents of GITHUB_OUTPUT:"
@@ -219,8 +228,8 @@ runs:
         echo "📄 Scan Output:"
         echo "$SCAN_OUTPUT"
         
-        # Set exit code for workflow
-        exit $SCAN_EXIT_CODE
+        # Note: Don't exit here - let the workflow handle the exit code
+        # The exit code is captured in outputs for the workflow to use
     
     - name: Comment on PR
       if: github.event_name == 'pull_request' && inputs.comment-pr == 'true'
@@ -240,9 +249,9 @@ runs:
           }
           
           const scanOutput = fs.readFileSync(outputPath, 'utf8');
-          const exitCode = '${{ steps.scan.outputs.exit-code }}';
-          const issuesFound = '${{ steps.scan.outputs.issues-found }}';
-          const vulnsFound = '${{ steps.scan.outputs.vulnerabilities-found }}';
+          const exitCode = process.env.PHPCOP_EXIT_CODE || '0';
+          const issuesFound = process.env.PHPCOP_ISSUES_FOUND || '0';
+          const vulnsFound = process.env.PHPCOP_VULNS_FOUND || '0';
           
           // Determine status emoji and message
           let statusEmoji, statusMessage;
