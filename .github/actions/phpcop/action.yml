@@ -164,20 +164,20 @@ runs:
           php phpcop.phar scan --format=html --quiet > phpcop-report.html 2>/dev/null || true
         fi
         
-        # Count issues for outputs (handle empty results properly)
-        ISSUES_COUNT=$(echo "$SCAN_OUTPUT" | grep -c "^•" 2>/dev/null || echo "0")
-        VULNS_COUNT=$(echo "$SCAN_OUTPUT" | grep -c "🚨" 2>/dev/null || echo "0")
+        # Count issues for outputs - force to simple integers
+        ISSUES_COUNT="0"
+        VULNS_COUNT="0"
+        if echo "$SCAN_OUTPUT" | grep -q "^•"; then
+          ISSUES_COUNT=$(echo "$SCAN_OUTPUT" | grep "^•" | wc -l | tr -d ' ')
+        fi
+        if echo "$SCAN_OUTPUT" | grep -q "🚨"; then
+          VULNS_COUNT=$(echo "$SCAN_OUTPUT" | grep "🚨" | wc -l | tr -d ' ')
+        fi
         
-        # Ensure single digit counts
-        ISSUES_COUNT=$(echo "$ISSUES_COUNT" | cut -c1)
-        VULNS_COUNT=$(echo "$VULNS_COUNT" | cut -c1)
-        
-        # Set environment variables for use in subsequent steps  
-        {
-          echo "PHPCOP_EXIT_CODE=$SCAN_EXIT_CODE"
-          echo "PHPCOP_ISSUES_FOUND=$ISSUES_COUNT"  
-          echo "PHPCOP_VULNS_FOUND=$VULNS_COUNT"
-        } >> "$GITHUB_ENV"
+        # Set environment variables for subsequent steps
+        echo "PHPCOP_EXIT_CODE=$SCAN_EXIT_CODE" >> "$GITHUB_ENV"
+        echo "PHPCOP_ISSUES_FOUND=$ISSUES_COUNT" >> "$GITHUB_ENV"
+        echo "PHPCOP_VULNS_FOUND=$VULNS_COUNT" >> "$GITHUB_ENV"
         
         # Display results
         echo "📋 Scan Results:"
