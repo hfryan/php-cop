@@ -147,7 +147,7 @@ runs:
         [ -n "${{ inputs.license-denylist }}" ] && ARGS="$ARGS --license-denylist=${{ inputs.license-denylist }}"
         
         echo "🚓 Running PHPCop Security Scan..."
-        echo "Command: php phpcop.phar scan$ARGS"
+        echo "Command: php phpcop.phar scan $ARGS"
         
         # Run scan and capture output
         SCAN_OUTPUT=$(php phpcop.phar scan $ARGS 2>&1) || SCAN_EXIT_CODE=$?
@@ -191,12 +191,22 @@ runs:
         VULNS_COUNT=${VULNS_COUNT:-0}
         
         # Set GitHub Actions outputs
+        echo "DEBUG: About to write outputs - SCAN_EXIT_CODE='$SCAN_EXIT_CODE'"
+        echo "DEBUG: GITHUB_OUTPUT file: '$GITHUB_OUTPUT'"
+        
+        # Ensure exit code is set
+        SCAN_EXIT_CODE=${SCAN_EXIT_CODE:-0}
+        
         {
           echo "exit-code=$SCAN_EXIT_CODE"
           echo "issues-found=$ISSUES_COUNT"
           echo "vulnerabilities-found=$VULNS_COUNT"
           echo "report-file=phpcop-output.txt"
         } >> "$GITHUB_OUTPUT"
+        
+        echo "DEBUG: Outputs written to file"
+        echo "DEBUG: Contents of GITHUB_OUTPUT:"
+        cat "$GITHUB_OUTPUT" || echo "ERROR: Could not read GITHUB_OUTPUT file"
         
         # Display results
         echo "📋 Scan Results:"
