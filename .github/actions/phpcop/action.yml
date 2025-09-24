@@ -195,21 +195,15 @@ runs:
         ISSUES_COUNT=$(echo "$SCAN_OUTPUT" | grep -c "^•" 2>/dev/null || echo "0")
         VULNS_COUNT=$(echo "$SCAN_OUTPUT" | grep -c "🚨" 2>/dev/null || echo "0")
         
-        # Ensure counts are clean integers
-        ISSUES_COUNT=$(echo "$ISSUES_COUNT" | tr -d '\r\n \t')
-        VULNS_COUNT=$(echo "$VULNS_COUNT" | tr -d '\r\n \t')
+        echo "DEBUG: Raw ISSUES_COUNT: '$ISSUES_COUNT'"
+        echo "DEBUG: Raw VULNS_COUNT: '$VULNS_COUNT'"
         
-        # Validate they are numbers
-        if [[ ! "$ISSUES_COUNT" =~ ^[0-9]+$ ]]; then
-          ISSUES_COUNT=0
-        fi
-        if [[ ! "$VULNS_COUNT" =~ ^[0-9]+$ ]]; then
-          VULNS_COUNT=0
-        fi
-        
-        # Default to 0 if empty
+        # Just ensure they are integers - grep -c should already return clean integers
         ISSUES_COUNT=${ISSUES_COUNT:-0}
         VULNS_COUNT=${VULNS_COUNT:-0}
+        
+        echo "DEBUG: Final ISSUES_COUNT: '$ISSUES_COUNT'"
+        echo "DEBUG: Final VULNS_COUNT: '$VULNS_COUNT'"
         
         # Set GitHub Actions outputs and environment variables
         echo "DEBUG: About to write outputs - SCAN_EXIT_CODE='$SCAN_EXIT_CODE'"
