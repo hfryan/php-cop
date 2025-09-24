@@ -183,10 +183,6 @@ runs:
         echo "PHPCOP_ISSUES_FOUND=$ISSUES_COUNT" >> "$GITHUB_ENV"
         echo "PHPCOP_VULNS_FOUND=$VULNS_COUNT" >> "$GITHUB_ENV"
         
-        # Also write to workspace files for the output step
-        echo "$SCAN_EXIT_CODE" > "${{ inputs.working-directory }}/phpcop_exit_code"
-        echo "$ISSUES_COUNT" > "${{ inputs.working-directory }}/phpcop_issues_count" 
-        echo "$VULNS_COUNT" > "${{ inputs.working-directory }}/phpcop_vulns_count"
         
         # Display results
         echo "📋 Scan Results:"
