@@ -1,0 +1,138 @@
+# Test workflow for PHPCop GitHub Action
+# This tests the action on the PHPCop project itself
+
+name: Test PHPCop Action
+
+on:
+  push:
+    branches: [ feature/github-actions-integration ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-action:
+    name: Test PHPCop GitHub Action
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+          tools: composer
+      
+      - name: Install Dependencies
+        run: composer install --no-dev --prefer-dist --no-progress
+      
+      - name: Test PHPCop Action
+        id: phpcop-test
+        uses: ./.github/actions/phpcop
+        continue-on-error: true
+        with:
+          fail-on: 'critical'
+          exclude-dev: true
+          min-severity: 'low'
+          comment-pr: true
+          upload-artifacts: true
+          format: 'table'
+          exit-code: 'legacy'
+      
+      - name: Display Test Results
+        run: |
+          echo "🧪 PHPCop Action Test Results:"
+          echo "Exit Code: '${{ steps.phpcop-test.outputs.exit-code }}'"
+          echo "Issues Found: '${{ steps.phpcop-test.outputs.issues-found }}'"
+          echo "Vulnerabilities: '${{ steps.phpcop-test.outputs.vulnerabilities-found }}'"
+          echo "Report File: '${{ steps.phpcop-test.outputs.report-file }}'"
+      
+      - name: Validate Exit Code
+        run: |
+          EXIT_CODE="${{ steps.phpcop-test.outputs.exit-code }}"          
+          if [[ "$EXIT_CODE" =~ ^[0-3]$ ]]; then
+            echo "✅ Valid exit code: $EXIT_CODE"
+            case $EXIT_CODE in
+              0) echo "   → SUCCESS: No issues found" ;;
+              1) echo "   → WARNINGS: Minor issues found" ;;
+              2) echo "   → ERRORS: Moderate issues found (expected for this project)" ;;
+              3) echo "   → CRITICAL: High-priority security issues found" ;;
+            esac
+          else
+            echo "❌ Invalid exit code: '$EXIT_CODE'"
+            echo "❌ Expected: 0, 1, 2, or 3"
+            exit 1
+          fi
+      
+      - name: Check Report File Exists
+        run: |
+          REPORT_FILE="${{ steps.phpcop-test.outputs.report-file }}"
+          if [ -f "$REPORT_FILE" ]; then
+            echo "✅ Report file exists: $REPORT_FILE"
+            echo "📄 Report preview:"
+            head -10 "$REPORT_FILE"
+          else
+            echo "❌ Report file not found: $REPORT_FILE"
+            exit 1
+          fi
+
+  test-with-dev-deps:
+    name: Test with Dev Dependencies
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+          tools: composer
+      
+      - name: Install All Dependencies
+        run: composer install --prefer-dist --no-progress
+      
+      - name: Test Dev Dependencies Scan
+        uses: ./.github/actions/phpcop
+        with:
+          only-dev: true
+          fail-on: 'critical'
+          comment-pr: false
+          upload-artifacts: false
+
+  test-different-formats:
+    name: Test Different Output Formats
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        format: [json, md, html]
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+          tools: composer
+      
+      - name: Install Dependencies
+        run: composer install --no-dev --prefer-dist --no-progress
+      
+      - name: Test ${{ matrix.format }} Format
+        uses: ./.github/actions/phpcop
+        continue-on-error: true
+        with:
+          format: ${{ matrix.format }}
+          fail-on: 'critical'
+          comment-pr: false
+          upload-artifacts: true
+          exit-code: 'legacy'

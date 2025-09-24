@@ -1,0 +1,287 @@
+name: 'PHPCop Security Scanner'
+description: 'Scan PHP dependencies for security vulnerabilities, outdated packages, and maintenance issues'
+author: 'hfryan'
+
+branding:
+  icon: 'shield'
+  color: 'red'
+
+inputs:
+  format:
+    description: 'Output format (table, json, md, html, sarif)'
+    required: false
+    default: 'table'
+  
+  fail-on:
+    description: 'Minimum severity to fail the build (low, moderate, high, critical)'
+    required: false
+    default: 'high'
+  
+  stale-months:
+    description: 'Months to flag packages as stale'
+    required: false
+    default: '18'
+  
+  exclude-dev:
+    description: 'Exclude dev dependencies from scan'
+    required: false
+    default: 'false'
+  
+  only-dev:
+    description: 'Only scan dev dependencies'
+    required: false
+    default: 'false'
+  
+  min-severity:
+    description: 'Minimum vulnerability severity to report (low, moderate, high, critical)'
+    required: false
+    default: 'low'
+  
+  ignore-packages:
+    description: 'Comma-separated list of packages to ignore'
+    required: false
+    default: ''
+  
+  license-allowlist:
+    description: 'Comma-separated list of allowed licenses'
+    required: false
+    default: ''
+  
+  license-denylist:
+    description: 'Comma-separated list of denied licenses'
+    required: false
+    default: ''
+  
+  exit-code:
+    description: 'Exit code behavior (legacy, enhanced)'
+    required: false
+    default: 'enhanced'
+  
+  comment-pr:
+    description: 'Post scan results as PR comment'
+    required: false
+    default: 'true'
+  
+  upload-artifacts:
+    description: 'Upload scan reports as artifacts'
+    required: false
+    default: 'true'
+  
+  working-directory:
+    description: 'Working directory to run scan in'
+    required: false
+    default: '.'
+
+outputs:
+  exit-code:
+    description: 'The exit code from PHPCop scan'
+    value: ${{ steps.outputs.outputs.exit-code }}
+  
+  issues-found:
+    description: 'Number of issues found'
+    value: ${{ steps.outputs.outputs.issues-found }}
+  
+  vulnerabilities-found:
+    description: 'Number of vulnerabilities found'
+    value: ${{ steps.outputs.outputs.vulnerabilities-found }}
+  
+  report-file:
+    description: 'Path to the generated report file'
+    value: ${{ steps.outputs.outputs.report-file }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+        coverage: none
+        tools: composer
+    
+    - name: Build PHPCop PHAR from Source
+      shell: bash
+      run: |
+        cd "${{ inputs.working-directory }}"
+        echo "🔨 Building PHPCop from source (testing mode)..."
+        
+        # For testing the GitHub Action, build from current source
+        # In production, this would download from releases
+        composer install --no-dev --optimize-autoloader
+        php -d phar.readonly=0 build-phar.php
+        
+        # Verify PHAR was built correctly
+        if [ -f "phpcop.phar" ] && [ $(stat -f%z phpcop.phar 2>/dev/null || stat -c%s phpcop.phar) -gt 1000000 ]; then
+          echo "✅ PHPCop PHAR built successfully ($(ls -lh phpcop.phar | awk '{print $5}'))"
+          chmod +x phpcop.phar
+        else
+          echo "❌ PHPCop PHAR build failed or file too small"
+          ls -la phpcop.phar
+          exit 1
+        fi
+        
+    - name: Verify composer.lock exists
+      shell: bash
+      run: |
+        cd "${{ inputs.working-directory }}"
+        if [ ! -f "composer.lock" ]; then
+          echo "❌ composer.lock not found in ${{ inputs.working-directory }}"
+          echo "💡 Make sure to run 'composer install' before PHPCop scan"
+          exit 1
+        fi
+        echo "✅ composer.lock found"
+    
+    - name: Run PHPCop Scan
+      shell: bash
+      id: scan
+      run: |
+        cd "${{ inputs.working-directory }}"
+        
+        # Build command arguments
+        ARGS="--quiet"  # Use quiet mode for cleaner CI output
+        [ "${{ inputs.format }}" != "table" ] && ARGS="$ARGS --format=${{ inputs.format }}"
+        [ "${{ inputs.fail-on }}" != "high" ] && ARGS="$ARGS --fail-on=${{ inputs.fail-on }}"
+        [ "${{ inputs.stale-months }}" != "18" ] && ARGS="$ARGS --stale-months=${{ inputs.stale-months }}"
+        [ "${{ inputs.exclude-dev }}" = "true" ] && ARGS="$ARGS --exclude-dev"
+        [ "${{ inputs.only-dev }}" = "true" ] && ARGS="$ARGS --only-dev"
+        [ "${{ inputs.min-severity }}" != "low" ] && ARGS="$ARGS --min-severity=${{ inputs.min-severity }}"
+        [ "${{ inputs.exit-code }}" != "enhanced" ] && ARGS="$ARGS --exit-code=${{ inputs.exit-code }}"
+        [ -n "${{ inputs.ignore-packages }}" ] && ARGS="$ARGS --ignore-packages=${{ inputs.ignore-packages }}"
+        [ -n "${{ inputs.license-allowlist }}" ] && ARGS="$ARGS --license-allowlist=${{ inputs.license-allowlist }}"
+        [ -n "${{ inputs.license-denylist }}" ] && ARGS="$ARGS --license-denylist=${{ inputs.license-denylist }}"
+        
+        echo "🚓 Running PHPCop Security Scan..."
+        echo "Command: php phpcop.phar scan $ARGS"
+        
+        # Run scan and capture output
+        SCAN_OUTPUT=$(php phpcop.phar scan $ARGS 2>&1) || SCAN_EXIT_CODE=$?
+        SCAN_EXIT_CODE=${SCAN_EXIT_CODE:-0}
+        
+        # Save output to file
+        echo "$SCAN_OUTPUT" > phpcop-output.txt
+        
+        # Generate reports in different formats for artifacts
+        if [ "${{ inputs.upload-artifacts }}" = "true" ]; then
+          echo "📊 Generating additional report formats..."
+          php phpcop.phar scan --format=json --quiet > phpcop-report.json 2>/dev/null || true
+          php phpcop.phar scan --format=md --quiet > phpcop-report.md 2>/dev/null || true
+          php phpcop.phar scan --format=html --quiet > phpcop-report.html 2>/dev/null || true
+        fi
+        
+        # Count issues for outputs - force to simple integers
+        ISSUES_COUNT="0"
+        VULNS_COUNT="0"
+        if echo "$SCAN_OUTPUT" | grep -q "^•"; then
+          ISSUES_COUNT=$(echo "$SCAN_OUTPUT" | grep "^•" | wc -l | tr -d ' ')
+        fi
+        if echo "$SCAN_OUTPUT" | grep -q "🚨"; then
+          VULNS_COUNT=$(echo "$SCAN_OUTPUT" | grep "🚨" | wc -l | tr -d ' ')
+        fi
+        
+        # Set environment variables for subsequent steps
+        echo "PHPCOP_EXIT_CODE=$SCAN_EXIT_CODE" >> "$GITHUB_ENV"
+        echo "PHPCOP_ISSUES_FOUND=$ISSUES_COUNT" >> "$GITHUB_ENV"
+        echo "PHPCOP_VULNS_FOUND=$VULNS_COUNT" >> "$GITHUB_ENV"
+        
+        
+        # Display results
+        echo "📋 Scan Results:"
+        echo "   Exit Code: $SCAN_EXIT_CODE"
+        echo "   Issues Found: $ISSUES_COUNT"
+        echo "   Vulnerabilities: $VULNS_COUNT"
+        
+        # Show output
+        echo ""
+        echo "📄 Scan Output:"
+        echo "$SCAN_OUTPUT"
+        
+        # Note: Don't exit here - let the workflow handle the exit code
+        # The exit code is captured in outputs for the workflow to use
+    
+    - name: Comment on PR
+      if: github.event_name == 'pull_request' && inputs.comment-pr == 'true'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+          
+          // Read scan output
+          const workingDir = '${{ inputs.working-directory }}';
+          const outputPath = path.join(workingDir, 'phpcop-output.txt');
+          
+          if (!fs.existsSync(outputPath)) {
+            console.log('⚠️ PHPCop output file not found, skipping PR comment');
+            return;
+          }
+          
+          const scanOutput = fs.readFileSync(outputPath, 'utf8');
+          const exitCode = process.env.PHPCOP_EXIT_CODE || '0';
+          const issuesFound = process.env.PHPCOP_ISSUES_FOUND || '0';
+          const vulnsFound = process.env.PHPCOP_VULNS_FOUND || '0';
+          
+          // Determine status emoji and message
+          let statusEmoji, statusMessage;
+          switch(exitCode) {
+            case '0':
+              statusEmoji = '✅';
+              statusMessage = 'No security issues found';
+              break;
+            case '1':
+              statusEmoji = '⚠️';
+              statusMessage = 'Minor issues found (warnings)';
+              break;
+            case '2':
+              statusEmoji = '❌';
+              statusMessage = 'Moderate issues found (errors)';
+              break;
+            case '3':
+              statusEmoji = '🚨';
+              statusMessage = 'Critical security issues found';
+              break;
+            default:
+              statusEmoji = '❓';
+              statusMessage = 'Scan completed with unknown status';
+          }
+          
+          // Create comment body
+          const commentBody = '## ' + statusEmoji + ' PHPCop Security Scan Results\n\n' +
+            '**Status:** ' + statusMessage + '\n' +
+            '**Exit Code:** ' + exitCode + '\n' +
+            '**Issues Found:** ' + issuesFound + '\n' +
+            '**Vulnerabilities:** ' + vulnsFound + '\n\n' +
+            '<details>\n<summary>📄 Detailed Scan Results</summary>\n\n' +
+            '```\n' + scanOutput + '\n```\n\n</details>\n\n' +
+            '---\n*Scan performed by [PHPCop](https://github.com/hfryan/php-cop) 🚓*';
+          
+          // Post comment
+          await github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: commentBody
+          });
+          
+          console.log('✅ Posted PHPCop results to PR comment');
+    
+    - name: Upload Scan Reports
+      if: inputs.upload-artifacts == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: phpcop-security-reports-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
+        path: |
+          ${{ inputs.working-directory }}/phpcop-output.txt
+          ${{ inputs.working-directory }}/phpcop-report.json
+          ${{ inputs.working-directory }}/phpcop-report.md
+          ${{ inputs.working-directory }}/phpcop-report.html
+        retention-days: 30
+        if-no-files-found: ignore
+    
+    - name: Set Composite Action Outputs  
+      id: outputs
+      shell: bash
+      run: |
+        echo "exit-code=${PHPCOP_EXIT_CODE:-0}" >> "$GITHUB_OUTPUT"
+        echo "issues-found=${PHPCOP_ISSUES_FOUND:-0}" >> "$GITHUB_OUTPUT"  
+        echo "vulnerabilities-found=${PHPCOP_VULNS_FOUND:-0}" >> "$GITHUB_OUTPUT"
+        echo "report-file=phpcop-output.txt" >> "$GITHUB_OUTPUT"

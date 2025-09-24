@@ -5,7 +5,7 @@
   "keywords": ["security", "composer", "dependencies", "vulnerability", "audit", "cli"],
   "homepage": "https://github.com/hfryan/php-cop",
   "require": {
-    "php": ">=8.1",
+    "php": ">=8.2",
     "symfony/console": "^7.3",
     "symfony/process": "^7.3",
     "guzzlehttp/guzzle": "^7.8",
