@@ -52,6 +52,10 @@ jobs:
       - name: Validate Exit Code
         run: |
           EXIT_CODE="${{ steps.phpcop-test.outputs.exit-code }}"
+          echo "DEBUG: Received exit code: '$EXIT_CODE'"
+          echo "DEBUG: Exit code length: ${#EXIT_CODE}"
+          echo "DEBUG: Exit code hex: $(echo -n "$EXIT_CODE" | xxd -p)"
+          
           if [[ "$EXIT_CODE" =~ ^[0-3]$ ]]; then
             echo "✅ Valid exit code: $EXIT_CODE"
             case $EXIT_CODE in
@@ -61,7 +65,8 @@ jobs:
               3) echo "   → CRITICAL: High-priority security issues found" ;;
             esac
           else
-            echo "❌ Invalid exit code: $EXIT_CODE"
+            echo "❌ Invalid exit code: '$EXIT_CODE'"
+            echo "❌ Expected: 0, 1, 2, or 3"
             exit 1
           fi
       

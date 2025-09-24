@@ -153,9 +153,16 @@ runs:
         SCAN_OUTPUT=$(php phpcop.phar scan $ARGS 2>&1) || SCAN_EXIT_CODE=$?
         SCAN_EXIT_CODE=${SCAN_EXIT_CODE:-0}
         
+        # Debug exit code before cleaning
+        echo "DEBUG: Raw exit code: '$SCAN_EXIT_CODE'"
+        echo "DEBUG: Exit code hex dump: $(echo -n "$SCAN_EXIT_CODE" | xxd -p)"
+        
         # Clean exit code (remove any whitespace/non-digits)
         SCAN_EXIT_CODE=$(echo "$SCAN_EXIT_CODE" | tr -d '\r\n' | grep -o '[0-9]*' | head -1)
         SCAN_EXIT_CODE=${SCAN_EXIT_CODE:-0}
+        
+        # Debug after cleaning
+        echo "DEBUG: Cleaned exit code: '$SCAN_EXIT_CODE'"
         
         # Save output to file
         echo "$SCAN_OUTPUT" > phpcop-output.txt
