@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHPCop 🚓 - Dependency Patrol</title>
+    <meta name="description" content="PHPCop - A PHP security scanner that patrols your dependencies for vulnerabilities, outdated packages, and maintenance issues.">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <span class="logo">🚓</span>
+                <span class="brand-name">PHPCop</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#precinct">The Precinct</a></li>
+                <li><a href="#patrol">On Patrol</a></li>
+                <li><a href="#evidence">Evidence Room</a></li>
+                <li><a href="#dispatch">Dispatch</a></li>
+                <li><a href="#squad">The Squad</a></li>
+            </ul>
+            <div class="nav-cta">
+                <a href="https://github.com/hfryan/php-cop" class="btn-badge">Get Your Badge</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="siren-lights"></div>
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="hero-title">
+                    <span class="badge">🚓</span>
+                    PHPCop
+                </h1>
+                <p class="hero-subtitle">Dependency Patrol - Protecting Your PHP Codebase</p>
+                <p class="hero-description">
+                    Keeping the streets of your dependency tree safe, one scan at a time.
+                    PHPCop patrols your <code>composer.lock</code> to catch vulnerabilities before they cause trouble.
+                </p>
+                <div class="hero-buttons">
+                    <a href="#dispatch" class="btn btn-primary">
+                        <span class="siren">🚨</span> Start Patrol
+                    </a>
+                    <a href="https://github.com/hfryan/php-cop" class="btn btn-secondary">View Case Files</a>
+                </div>
+                <div class="badges">
+                    <img src="https://img.shields.io/packagist/v/hfryan/php-cop?style=flat-square&logo=packagist&logoColor=white" alt="Latest Version">
+                    <img src="https://img.shields.io/packagist/dt/hfryan/php-cop?style=flat-square&logo=packagist&logoColor=white" alt="Total Downloads">
+                    <img src="https://img.shields.io/github/stars/hfryan/php-cop?style=flat-square&logo=github" alt="GitHub Stars">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features / On Patrol -->
+    <section id="patrol" class="section">
+        <div class="container">
+            <h2 class="section-title">
+                <span class="icon">🚨</span>
+                On Patrol - What We Investigate
+            </h2>
+            <p class="section-subtitle">PHPCop patrols your dependencies 24/7, looking for these common offenders:</p>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🛡️</div>
+                    <h3>Security Vulnerabilities</h3>
+                    <p>Detects known CVEs and security advisories using <code>composer audit</code>. We catch the bad guys before they strike.</p>
+                    <div class="severity-badge critical">CRITICAL</div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">⬆️</div>
+                    <h3>Outdated Packages</h3>
+                    <p>Identifies packages with newer versions available. Keep your dependencies up-to-date and compliant.</p>
+                    <div class="severity-badge moderate">MODERATE</div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🚫</div>
+                    <h3>Abandoned Dependencies</h3>
+                    <p>Flags packages no longer maintained by their authors. Don't let unmaintained code become a liability.</p>
+                    <div class="severity-badge high">HIGH</div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">⌛</div>
+                    <h3>Stale Packages</h3>
+                    <p>Finds packages that haven't been updated in months. Old code can mean hidden dangers.</p>
+                    <div class="severity-badge warning">WARNING</div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>Professional Reports</h3>
+                    <p>Generate beautiful HTML, Markdown, JSON, and table reports for your team and stakeholders.</p>
+                    <div class="severity-badge info">INFO</div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>CI/CD Ready</h3>
+                    <p>Perfect for automated pipelines with intelligent exit codes and quiet modes for automation.</p>
+                    <div class="severity-badge info">INFO</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- The Precinct / About -->
+    <section id="precinct" class="section section-dark">
+        <div class="container">
+            <h2 class="section-title">
+                <span class="icon">🏛️</span>
+                Welcome to the Precinct
+            </h2>
+            <div class="precinct-content">
+                <div class="precinct-text">
+                    <h3>Our Mission</h3>
+                    <p>
+                        At PHPCop, we're dedicated to keeping your PHP applications secure. We patrol the dependency
+                        landscape so you don't have to, scanning your <code>composer.lock</code> files for
+                        vulnerabilities, outdated packages, and maintenance issues.
+                    </p>
+                    <h3>Why Choose PHPCop?</h3>
+                    <ul class="check-list">
+                        <li>🛡️ Security First - Detect CVEs before they impact your application</li>
+                        <li>📊 Beautiful Reports - Professional HTML and Markdown output</li>
+                        <li>⚙️ Zero Configuration - Works out of the box</li>
+                        <li>🚀 Fast & Efficient - Parallel processing with intelligent caching</li>
+                        <li>👥 Team Friendly - Share security policies via config files</li>
+                        <li>🎯 CI/CD Integration - GitHub Actions ready</li>
+                    </ul>
+                </div>
+                <div class="precinct-stats">
+                    <div class="stat-card">
+                        <div class="stat-number">24/7</div>
+                        <div class="stat-label">Dependency Patrol</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">100%</div>
+                        <div class="stat-label">Open Source</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">∞</div>
+                        <div class="stat-label">Security Scans</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Evidence Room / Examples -->
+    <section id="evidence" class="section">
+        <div class="container">
+            <h2 class="section-title">
+                <span class="icon">📁</span>
+                Evidence Room - Sample Case Files
+            </h2>
+            <p class="section-subtitle">See what a typical patrol report looks like:</p>
+
+            <div class="terminal">
+                <div class="terminal-header">
+                    <div class="terminal-buttons">
+                        <span class="btn-close"></span>
+                        <span class="btn-minimize"></span>
+                        <span class="btn-maximize"></span>
+                    </div>
+                    <div class="terminal-title">phpcop scan --format=table</div>
+                </div>
+                <div class="terminal-body">
+                    <pre><code>🚓 PHP Cop: Dependency Patrol — Case File
+--------------------------------------------------------------------------------
+
+<span class="text-blue">Scanning dependencies...</span> <span class="siren-text">🚨</span>
+
+<span class="text-red">━━━━━━━━━━━━━━━━━━━━━</span><span class="text-blue">━━━━━━━━━━━━━━━━━━━━━</span>
+
+<span class="text-yellow">Violations Found:</span>
+
+• guzzlehttp/psr7 2.7.1  [⬆️ Outdated → 2.8.0]
+• psr/container 2.0.2  [⌛ Stale - No updates in 24 months]
+• symfony/console v7.3.2  [⬆️ Outdated → v7.3.3]
+   └─ <span class="text-red">🚨 HIGH</span> CVE-2023-12345 https://cve.mitre.org/...
+• doctrine/orm 2.14.0  [🚫 Abandoned]
+
+<span class="text-yellow">Summary:</span>
+  Total Packages: 42
+  <span class="text-red">Vulnerabilities: 1</span>
+  <span class="text-yellow">Outdated: 2</span>
+  <span class="text-yellow">Stale: 1</span>
+  <span class="text-red">Abandoned: 1</span>
+
+<span class="text-red">⚠️  Exit Code: 3 (CRITICAL)</span></code></pre>
+                </div>
+            </div>
+
+            <div class="output-formats">
+                <h3>Multiple Output Formats</h3>
+                <div class="format-grid">
+                    <div class="format-card">
+                        <div class="format-icon">📊</div>
+                        <h4>Table</h4>
+                        <p>Terminal-friendly tables for quick scans</p>
+                    </div>
+                    <div class="format-card">
+                        <div class="format-icon">📄</div>
+                        <h4>JSON</h4>
+                        <p>Machine-readable for CI/CD pipelines</p>
+                    </div>
+                    <div class="format-card">
+                        <div class="format-icon">📝</div>
+                        <h4>Markdown</h4>
+                        <p>Beautiful docs for your repository</p>
+                    </div>
+                    <div class="format-card">
+                        <div class="format-icon">🌐</div>
+                        <h4>HTML</h4>
+                        <p>Interactive reports for stakeholders</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Dispatch / Quick Start -->
+    <section id="dispatch" class="section section-dark">
+        <div class="container">
+            <h2 class="section-title">
+                <span class="icon">📡</span>
+                Dispatch - Get Started in Seconds
+            </h2>
+            <p class="section-subtitle">Deploy PHPCop to your project and start patrolling:</p>
+
+            <div class="installation-methods">
+                <div class="method-card">
+                    <h3>🌍 Global Installation</h3>
+                    <p>Install once, use everywhere</p>
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <pre><code>composer global require hfryan/php-cop
+phpcop scan</code></pre>
+                    </div>
+                </div>
+
+                <div class="method-card">
+                    <h3>📦 Per-Project Installation</h3>
+                    <p>Add to your project dependencies</p>
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <pre><code>composer require --dev hfryan/php-cop
+php vendor/bin/phpcop.php scan</code></pre>
+                    </div>
+                </div>
+
+                <div class="method-card">
+                    <h3>📥 PHAR Download</h3>
+                    <p>Zero dependencies, perfect for CI/CD</p>
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <pre><code>wget https://github.com/hfryan/php-cop/releases/latest/download/phpcop.phar
+php phpcop.phar scan</code></pre>
+                    </div>
+                </div>
+
+                <div class="method-card">
+                    <h3>⚙️ GitHub Actions</h3>
+                    <p>Automated security patrols in CI/CD</p>
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <pre><code>- name: PHPCop Security Scan
+  uses: hfryan/php-cop@main
+  with:
+    fail-on: 'high'
+    comment-pr: true</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="quick-commands">
+                <h3>Common Patrol Commands</h3>
+                <div class="command-grid">
+                    <div class="command-item">
+                        <code>phpcop scan</code>
+                        <span>Basic security patrol</span>
+                    </div>
+                    <div class="command-item">
+                        <code>phpcop scan --format=html</code>
+                        <span>Generate HTML report</span>
+                    </div>
+                    <div class="command-item">
+                        <code>phpcop scan --fail-on=moderate</code>
+                        <span>Strict enforcement mode</span>
+                    </div>
+                    <div class="command-item">
+                        <code>phpcop scan --exclude-dev</code>
+                        <span>Production-only scan</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- The Squad / Contributing -->
+    <section id="squad" class="section">
+        <div class="container">
+            <h2 class="section-title">
+                <span class="icon">👮</span>
+                Join The Squad
+            </h2>
+            <p class="section-subtitle">Help us keep the PHP community safe!</p>
+
+            <div class="contribute-grid">
+                <div class="contribute-card">
+                    <div class="contribute-icon">🐛</div>
+                    <h3>Report Issues</h3>
+                    <p>Found a bug? Let us know on GitHub Issues</p>
+                    <a href="https://github.com/hfryan/php-cop/issues" class="link-arrow">Open Issue →</a>
+                </div>
+
+                <div class="contribute-card">
+                    <div class="contribute-icon">💡</div>
+                    <h3>Feature Requests</h3>
+                    <p>Have ideas for new patrol features?</p>
+                    <a href="https://github.com/hfryan/php-cop/discussions" class="link-arrow">Share Ideas →</a>
+                </div>
+
+                <div class="contribute-card">
+                    <div class="contribute-icon">🔧</div>
+                    <h3>Contribute Code</h3>
+                    <p>Submit pull requests to improve PHPCop</p>
+                    <a href="https://github.com/hfryan/php-cop/blob/main/CONTRIBUTING.md" class="link-arrow">Contribute →</a>
+                </div>
+
+                <div class="contribute-card">
+                    <div class="contribute-icon">⭐</div>
+                    <h3>Spread the Word</h3>
+                    <p>Star the repo and share with your team</p>
+                    <a href="https://github.com/hfryan/php-cop" class="link-arrow">Star on GitHub →</a>
+                </div>
+            </div>
+
+            <div class="support-section">
+                <h3>Backup Units - Get Support</h3>
+                <div class="support-links">
+                    <a href="https://github.com/hfryan/php-cop" class="support-link">
+                        <span class="support-icon">📚</span>
+                        <div>
+                            <strong>Documentation</strong>
+                            <small>Comprehensive guides and examples</small>
+                        </div>
+                    </a>
+                    <a href="https://github.com/hfryan/php-cop/issues" class="support-link">
+                        <span class="support-icon">🐛</span>
+                        <div>
+                            <strong>GitHub Issues</strong>
+                            <small>Report bugs and track fixes</small>
+                        </div>
+                    </a>
+                    <a href="https://github.com/hfryan/php-cop/discussions" class="support-link">
+                        <span class="support-icon">💬</span>
+                        <div>
+                            <strong>Discussions</strong>
+                            <small>Ask questions and share tips</small>
+                        </div>
+                    </a>
+                    <a href="https://packagist.org/packages/hfryan/php-cop" class="support-link">
+                        <span class="support-icon">📦</span>
+                        <div>
+                            <strong>Packagist</strong>
+                            <small>Package details and stats</small>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <span class="logo">🚓</span>
+                    <span class="brand-name">PHPCop</span>
+                    <p class="footer-tagline">Dependency Patrol</p>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-column">
+                        <h4>Resources</h4>
+                        <ul>
+                            <li><a href="https://github.com/hfryan/php-cop">GitHub</a></li>
+                            <li><a href="https://packagist.org/packages/hfryan/php-cop">Packagist</a></li>
+                            <li><a href="https://github.com/hfryan/php-cop/releases">Releases</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Community</h4>
+                        <ul>
+                            <li><a href="https://github.com/hfryan/php-cop/issues">Issues</a></li>
+                            <li><a href="https://github.com/hfryan/php-cop/discussions">Discussions</a></li>
+                            <li><a href="https://github.com/hfryan/php-cop/blob/main/CONTRIBUTING.md">Contributing</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Legal</h4>
+                        <ul>
+                            <li><a href="https://github.com/hfryan/php-cop/blob/main/LICENSE">MIT License</a></li>
+                            <li><a href="https://github.com/hfryan/php-cop/blob/main/README.md">Documentation</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>Built with ❤️ for the PHP community</p>
+                <p class="footer-motto">Keep your dependencies secure, one scan at a time! 🚓</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

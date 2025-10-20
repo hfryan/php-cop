@@ -1,0 +1,36 @@
+# GitHub Pages Configuration for PHPCop
+
+# Theme (not used since we have custom HTML, but good to have)
+theme: jekyll-theme-minimal
+
+# Site settings
+title: PHPCop - Dependency Patrol
+description: A PHP security scanner that patrols your dependencies for vulnerabilities, outdated packages, and maintenance issues
+author: hfryan
+url: https://hfryan.github.io
+baseurl: /php-cop
+
+# GitHub metadata
+repository: hfryan/php-cop
+
+# Exclude files from Jekyll processing
+exclude:
+  - README.md
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor
+
+# Include files
+include:
+  - _config.yml
+
+# Markdown settings
+markdown: kramdown
+kramdown:
+  input: GFM
+  hard_wrap: false
+
+# Sass/SCSS settings
+sass:
+  style: compressed
