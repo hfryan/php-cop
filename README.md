@@ -46,6 +46,7 @@
 - ⬆️ **Outdated Package Detection** - Identifies packages with newer versions available
 - 🚫 **Abandoned Package Detection** - Flags packages that are no longer maintained
 - ⌛ **Stale Package Detection** - Finds packages that haven't been updated in months
+- 🔥 **Laravel Integration** - Automatic Laravel detection with framework-specific security recommendations
 - 📊 **Multiple Output Formats** - Table, JSON, Markdown, and HTML output
 - 🎯 **Advanced Filtering** - Filter by dependency type, licenses, and vulnerability severity
 - 🎚️ **Configurable Thresholds** - Set custom severity levels and staleness periods
@@ -348,6 +349,88 @@ RUN wget https://github.com/hfryan/php-cop/releases/latest/download/phpcop.phar 
 • symfony/console v7.3.2  [⬆️ Outdated → v7.3.3]
    └─ 🚨 high CVE-2023-12345 https://cve.mitre.org/...
 ```
+
+## Laravel Integration 🔥
+
+PHPCop automatically detects Laravel projects and provides framework-specific security insights!
+
+### Automatic Detection
+
+PHPCop detects Laravel projects automatically by looking for:
+- `artisan` file in project root
+- `laravel/framework` in composer dependencies
+
+When a Laravel project is detected, PHPCop provides:
+
+### Laravel-Specific Features
+
+**🎯 Framework Version Display**
+```bash
+🚓 PHP Cop: Dependency Patrol — Case File
+Project Type: Laravel 11.35.1
+```
+
+**🔥 Laravel Package Highlighting**
+Laravel ecosystem packages are highlighted with a 🔥 badge:
+- `laravel/framework`
+- `laravel/sanctum`, `laravel/passport`
+- `livewire/livewire`
+- `laravel/horizon`, `laravel/telescope`
+- And more!
+
+**⚠️ Laravel Security Recommendations**
+Automatic security checks for common Laravel issues:
+- **.env file protection** - Warns if .env might be committed to git
+- **EOL version detection** - Flags Laravel 10 and earlier as end-of-life
+- **Critical CVE awareness** - Highlights known Laravel vulnerabilities:
+  - CVE-2025-54068 (Livewire v3 RCE)
+  - CVE-2024-52301 (Environment variable manipulation)
+
+**📦 Laravel Package Context**
+Get specific security guidance for Laravel packages:
+```bash
+• livewire/livewire 3.5.0  [⬆️ Outdated → 3.6.4] 🔥 Laravel
+   ℹ️  Critical: Check for Livewire v3 RCE vulnerability (CVE-2025-54068)
+```
+
+### Example Output
+
+**For a Laravel 11 Project:**
+```bash
+🚓 PHP Cop: Dependency Patrol — Case File
+Project Type: Laravel 11.35.1
+
+Laravel Security Recommendations:
+  🚨 Add .env to .gitignore to prevent leaking APP_KEY
+
+--------------------------------------------------------------------------------
+• laravel/framework 11.35.0  [⬆️ Outdated → 11.35.1] 🔥 Laravel
+• livewire/livewire 3.5.0  [⬆️ Outdated → 3.6.4] 🔥 Laravel
+   ℹ️  Critical: Check for Livewire v3 RCE vulnerability (CVE-2025-54068)
+```
+
+**JSON Output with Laravel Data:**
+```json
+{
+  "generatedAt": "2025-10-21T14:30:00Z",
+  "projectType": "Laravel 11.35.1",
+  "isLaravel": true,
+  "laravelVersion": "11.35.1",
+  "laravelRecommendations": [
+    "Add .env to .gitignore to prevent leaking APP_KEY"
+  ],
+  "issues": [...]
+}
+```
+
+### Laravel Best Practices
+
+PHPCop helps enforce Laravel security best practices:
+- ✅ Keep Laravel framework updated
+- ✅ Monitor Laravel ecosystem packages (Livewire, Sanctum, etc.)
+- ✅ Prevent APP_KEY leaks
+- ✅ Stay on supported Laravel versions (11+)
+- ✅ Watch for framework-specific CVEs
 
 ## Advanced Filtering 🎯
 
