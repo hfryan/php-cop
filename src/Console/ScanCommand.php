@@ -6,7 +6,7 @@ use Symfony\Component\Console\Input\InputInterface as In;
 use Symfony\Component\Console\Output\OutputInterface as Out;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Helper\ProgressBar;
-use PHPCop\Services\{ComposerReader, PackagistClient, AuditRunner, ConfigReader};
+use PHPCop\Services\{ComposerReader, PackagistClient, AuditRunner, ConfigReader, LaravelDetector};
 
 final class ScanCommand extends Command
 {
@@ -38,6 +38,7 @@ final class ScanCommand extends Command
         $reader    = new ComposerReader();
         $audit     = new AuditRunner();
         $configReader = new ConfigReader();
+        $laravelDetector = new LaravelDetector();
 
         // Load configuration file and merge with CLI options
         $configFile = $in->getOption('config');
@@ -167,7 +168,9 @@ final class ScanCommand extends Command
             }
 
             if ($isOutdated || $abandoned || $isStale || $pkgAdvisories) {
-                $issues[] = compact('name','version','license','isOutdated','abandoned','isStale','pkgAdvisories','latestDisp','latestNorm');
+                $isLaravelPackage = $laravelDetector->isLaravelPackage($name);
+                $laravelContext = $laravelDetector->getVulnerabilityContext($name);
+                $issues[] = compact('name','version','license','isOutdated','abandoned','isStale','pkgAdvisories','latestDisp','latestNorm','isLaravelPackage','laravelContext');
             }
         }
 
@@ -181,16 +184,16 @@ final class ScanCommand extends Command
         $format = $options['format'];
         switch ($format) {
             case 'table':
-                $this->outputTable($out, $issues);
+                $this->outputTable($out, $issues, $laravelDetector);
                 break;
             case 'json':
-                $this->outputJson($out, $issues);
+                $this->outputJson($out, $issues, $laravelDetector);
                 break;
             case 'md':
-                $this->outputMarkdown($out, $issues);
+                $this->outputMarkdown($out, $issues, $laravelDetector);
                 break;
             case 'html':
-                $this->outputHtml($out, $issues);
+                $this->outputHtml($out, $issues, $laravelDetector);
                 break;
             default:
                 throw new \RuntimeException("Unsupported format: {$format}");
@@ -307,35 +310,84 @@ final class ScanCommand extends Command
         return 0; // SUCCESS: No issues (shouldn't reach here if issues array is not empty)
     }
 
-    private function outputTable(Out $out, array $issues): void
+    private function outputTable(Out $out, array $issues, LaravelDetector $laravelDetector): void
     {
+        $projectType = $laravelDetector->getProjectTypeLabel();
         $out->writeln("<info>🚓 PHP Cop: Dependency Patrol — Case File</info>");
+        $out->writeln("<comment>Project Type: {$projectType}</comment>");
+
+        // Show Laravel-specific warnings if applicable
+        if ($laravelDetector->isLaravelProject()) {
+            $recommendations = $laravelDetector->getSecurityRecommendations();
+            if (!empty($recommendations)) {
+                $out->writeln("");
+                $out->writeln("<fg=yellow>Laravel Security Recommendations:</>");
+                foreach ($recommendations as $rec) {
+                    $out->writeln("  {$rec}");
+                }
+            }
+        }
+
         $out->writeln(str_repeat('-', 80));
+
         foreach ($issues as $i) {
             $badges = [];
             if ($i['pkgAdvisories']) $badges[] = '⚠️ Vulns';
             if ($i['abandoned'])     $badges[] = '🚫 Abandoned';
             if ($i['isOutdated'])    $badges[] = '⬆️ Outdated → '.$i['latestDisp'];
             if ($i['isStale'])       $badges[] = '⌛ Stale';
-            $out->writeln(sprintf("• %s %s  [%s]", $i['name'], $i['version'], implode(' ', $badges)));
+
+            // Add Laravel package indicator
+            $laravelBadge = ($i['isLaravelPackage'] ?? false) ? '<fg=red>🔥 Laravel</>' : '';
+
+            $out->writeln(sprintf("• %s %s  [%s] %s", $i['name'], $i['version'], implode(' ', $badges), $laravelBadge));
+
+            // Show Laravel-specific context if available
+            if (!empty($i['laravelContext'])) {
+                $out->writeln("   <fg=yellow>ℹ️  {$i['laravelContext']}</>");
+            }
+
             foreach ($i['pkgAdvisories'] as $a) {
                 $out->writeln("   └─ 🚨 {$a['severity']} {$a['title']} {$a['link']}");
             }
         }
     }
 
-    private function outputJson(Out $out, array $issues): void
+    private function outputJson(Out $out, array $issues, LaravelDetector $laravelDetector): void
     {
-        $payload = ['generatedAt'=> (new \DateTimeImmutable())->format(\DateTime::ATOM),'issues'=>$issues];
+        $payload = [
+            'generatedAt' => (new \DateTimeImmutable())->format(\DateTime::ATOM),
+            'projectType' => $laravelDetector->getProjectTypeLabel(),
+            'isLaravel' => $laravelDetector->isLaravelProject(),
+            'laravelVersion' => $laravelDetector->getLaravelVersion(),
+            'laravelRecommendations' => $laravelDetector->getSecurityRecommendations(),
+            'issues' => $issues
+        ];
         $out->writeln(json_encode($payload, JSON_PRETTY_PRINT));
     }
 
-    private function outputMarkdown(Out $out, array $issues): void
+    private function outputMarkdown(Out $out, array $issues, LaravelDetector $laravelDetector): void
     {
+        $projectType = $laravelDetector->getProjectTypeLabel();
         $out->writeln("# 🚓 PHP Cop: Dependency Patrol — Case File");
         $out->writeln("");
-        $out->writeln("Generated: " . (new \DateTimeImmutable())->format('Y-m-d H:i:s T'));
+        $out->writeln("**Project Type:** {$projectType}");
         $out->writeln("");
+        $out->writeln("**Generated:** " . (new \DateTimeImmutable())->format('Y-m-d H:i:s T'));
+        $out->writeln("");
+
+        // Show Laravel recommendations if applicable
+        if ($laravelDetector->isLaravelProject()) {
+            $recommendations = $laravelDetector->getSecurityRecommendations();
+            if (!empty($recommendations)) {
+                $out->writeln("## ⚠️  Laravel Security Recommendations");
+                $out->writeln("");
+                foreach ($recommendations as $rec) {
+                    $out->writeln("- {$rec}");
+                }
+                $out->writeln("");
+            }
+        }
 
         if (empty($issues)) {
             $out->writeln("✅ **No issues found!** All dependencies are secure and up-to-date.");
@@ -351,11 +403,18 @@ final class ScanCommand extends Command
             if ($i['abandoned'])     $badges[] = '🚫 **Abandoned**';
             if ($i['isOutdated'])    $badges[] = "⬆️ **Outdated** → `{$i['latestDisp']}`";
             if ($i['isStale'])       $badges[] = '⌛ **Stale**';
+            if ($i['isLaravelPackage'] ?? false) $badges[] = '🔥 **Laravel Package**';
 
             $out->writeln("### `{$i['name']}` v{$i['version']}");
             $out->writeln("");
             $out->writeln(implode(' | ', $badges));
             $out->writeln("");
+
+            // Show Laravel context if available
+            if (!empty($i['laravelContext'])) {
+                $out->writeln("> ℹ️  **Laravel Context:** {$i['laravelContext']}");
+                $out->writeln("");
+            }
 
             if ($i['pkgAdvisories']) {
                 $out->writeln("**Security Advisories:**");
@@ -368,8 +427,12 @@ final class ScanCommand extends Command
         }
     }
 
-    private function outputHtml(Out $out, array $issues): void
+    private function outputHtml(Out $out, array $issues, LaravelDetector $laravelDetector): void
     {
+        $projectType = htmlspecialchars($laravelDetector->getProjectTypeLabel());
+        $isLaravel = $laravelDetector->isLaravelProject();
+        $recommendations = $laravelDetector->getSecurityRecommendations();
+
         $out->writeln("<!DOCTYPE html>");
         $out->writeln("<html lang='en'>");
         $out->writeln("<head>");
@@ -380,6 +443,9 @@ final class ScanCommand extends Command
         $out->writeln("        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 40px; background: #f8f9fa; }");
         $out->writeln("        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }");
         $out->writeln("        .header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #e9ecef; }");
+        $out->writeln("        .project-type { text-align: center; background: #e7f3ff; padding: 10px; border-radius: 5px; margin-bottom: 20px; color: #0066cc; }");
+        $out->writeln("        .laravel-recommendations { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin-bottom: 20px; }");
+        $out->writeln("        .laravel-badge { display: inline-block; background: #dc2626; color: white; padding: 2px 8px; border-radius: 3px; font-size: 12px; margin-left: 8px; }");
         $out->writeln("        .package { margin: 20px 0; padding: 20px; border: 1px solid #dee2e6; border-radius: 6px; background: #fff; }");
         $out->writeln("        .package-name { font-size: 1.3em; font-weight: bold; color: #495057; margin-bottom: 10px; }");
         $out->writeln("        .badges { margin: 10px 0; }");
@@ -403,13 +469,35 @@ final class ScanCommand extends Command
         $out->writeln("            <h1>🚓 PHP Cop: Dependency Patrol — Case File</h1>");
         $out->writeln("            <p>Generated: " . (new \DateTimeImmutable())->format('Y-m-d H:i:s T') . "</p>");
         $out->writeln("        </div>");
+        $out->writeln("        <div class='project-type'>");
+        $out->writeln("            <strong>Project Type:</strong> {$projectType}");
+        $out->writeln("        </div>");
+
+        if ($isLaravel && !empty($recommendations)) {
+            $out->writeln("        <div class='laravel-recommendations'>");
+            $out->writeln("            <h3>⚠️  Laravel Security Recommendations</h3>");
+            $out->writeln("            <ul>");
+            foreach ($recommendations as $rec) {
+                $out->writeln("                <li>" . htmlspecialchars($rec) . "</li>");
+            }
+            $out->writeln("            </ul>");
+            $out->writeln("        </div>");
+        }
 
         if (empty($issues)) {
             $out->writeln("        <div class='no-issues'>✅ No issues found! All dependencies are secure and up-to-date.</div>");
         } else {
             foreach ($issues as $i) {
                 $out->writeln("        <div class='package'>");
-                $out->writeln("            <div class='package-name'>{$i['name']} <code>v{$i['version']}</code></div>");
+                $packageName = htmlspecialchars($i['name']);
+                $laravelBadgeHtml = ($i['isLaravelPackage'] ?? false) ? "<span class='laravel-badge'>🔥 Laravel</span>" : '';
+                $out->writeln("            <div class='package-name'>{$packageName} <code>v{$i['version']}</code> {$laravelBadgeHtml}</div>");
+
+                // Show Laravel context if available
+                if (!empty($i['laravelContext'])) {
+                    $out->writeln("            <p style='color: #856404; background: #fff3cd; padding: 8px; border-radius: 4px; font-size: 0.9em;'>ℹ️ " . htmlspecialchars($i['laravelContext']) . "</p>");
+                }
+
                 $out->writeln("            <div class='badges'>");
 
                 if ($i['pkgAdvisories']) $out->writeln("                <span class='badge vuln'>⚠️ Vulnerabilities</span>");
