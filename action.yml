@@ -107,8 +107,9 @@ runs:
 
         # For testing the GitHub Action, build from current source
         # In production, this would download from releases
-        composer install --no-dev --optimize-autoloader
-        php -d phar.readonly=0 build-phar.php
+        # Use || true to prevent step failure - we check success via PHAR file
+        composer install --no-dev --optimize-autoloader || echo "⚠️ Composer install had issues"
+        php -d phar.readonly=0 build-phar.php || echo "⚠️ PHAR build had issues"
 
         # Verify PHAR was built correctly
         if [ -f "phpcop.phar" ] && [ $(stat -f%z phpcop.phar 2>/dev/null || stat -c%s phpcop.phar) -gt 1000000 ]; then
