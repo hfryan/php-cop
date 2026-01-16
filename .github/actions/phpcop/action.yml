@@ -104,30 +104,39 @@ runs:
       run: |
         cd "${{ inputs.working-directory }}"
         echo "🔨 Building PHPCop from source (testing mode)..."
-        
+
         # For testing the GitHub Action, build from current source
         # In production, this would download from releases
         composer install --no-dev --optimize-autoloader
         php -d phar.readonly=0 build-phar.php
-        
+
         # Verify PHAR was built correctly
         if [ -f "phpcop.phar" ] && [ $(stat -f%z phpcop.phar 2>/dev/null || stat -c%s phpcop.phar) -gt 1000000 ]; then
           echo "✅ PHPCop PHAR built successfully ($(ls -lh phpcop.phar | awk '{print $5}'))"
           chmod +x phpcop.phar
+          echo "PHPCOP_BUILD_SUCCESS=true" >> "$GITHUB_ENV"
         else
           echo "❌ PHPCop PHAR build failed or file too small"
-          ls -la phpcop.phar
-          exit 1
+          ls -la phpcop.phar 2>/dev/null || echo "PHAR file does not exist"
+          echo "PHPCOP_BUILD_SUCCESS=false" >> "$GITHUB_ENV"
+          echo "PHPCOP_EXIT_CODE=1" >> "$GITHUB_ENV"
+          echo "PHPCOP_ISSUES_FOUND=0" >> "$GITHUB_ENV"
+          echo "PHPCOP_VULNS_FOUND=0" >> "$GITHUB_ENV"
         fi
         
     - name: Verify composer.lock exists
       shell: bash
       run: |
         cd "${{ inputs.working-directory }}"
+        if [ "$PHPCOP_BUILD_SUCCESS" != "true" ]; then
+          echo "⚠️ Skipping - PHAR build failed"
+          exit 0
+        fi
         if [ ! -f "composer.lock" ]; then
           echo "❌ composer.lock not found in ${{ inputs.working-directory }}"
           echo "💡 Make sure to run 'composer install' before PHPCop scan"
-          exit 1
+          echo "PHPCOP_EXIT_CODE=1" >> "$GITHUB_ENV"
+          exit 0
         fi
         echo "✅ composer.lock found"
     
@@ -136,7 +145,14 @@ runs:
       id: scan
       run: |
         cd "${{ inputs.working-directory }}"
-        
+
+        # Skip if build failed
+        if [ "$PHPCOP_BUILD_SUCCESS" != "true" ]; then
+          echo "⚠️ Skipping scan - PHAR build failed"
+          echo "PHPCOP_EXIT_CODE=${PHPCOP_EXIT_CODE:-1}" >> "$GITHUB_ENV"
+          exit 0
+        fi
+
         # Build command arguments
         ARGS="--quiet"  # Use quiet mode for cleaner CI output
         [ "${{ inputs.format }}" != "table" ] && ARGS="$ARGS --format=${{ inputs.format }}"
