@@ -6,8 +6,8 @@ name: 🚓 Security Scan
 on:
   push:
     branches: [ main, develop ]
-  pull_request:
-    branches: [ main ]
+  # Note: PR testing uses test-action.yml with local action
+  # This example workflow runs after merge to validate the published action
 
 jobs:
   security-scan:

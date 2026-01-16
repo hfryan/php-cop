@@ -147,8 +147,8 @@ function getStub(): string
  */
 
 // Check PHP version
-if (version_compare(PHP_VERSION, '8.1.0', '<')) {
-    fwrite(STDERR, "PHPCop requires PHP 8.1 or higher. You are running " . PHP_VERSION . "\n");
+if (version_compare(PHP_VERSION, '8.3.0', '<')) {
+    fwrite(STDERR, "PHPCop requires PHP 8.3 or higher. You are running " . PHP_VERSION . "\n");
     exit(1);
 }
 
