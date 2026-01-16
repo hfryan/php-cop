@@ -294,11 +294,12 @@ runs:
         retention-days: 30
         if-no-files-found: ignore
     
-    - name: Set Composite Action Outputs  
+    - name: Set Composite Action Outputs
+      if: always()
       id: outputs
       shell: bash
       run: |
-        echo "exit-code=${PHPCOP_EXIT_CODE:-0}" >> "$GITHUB_OUTPUT"
-        echo "issues-found=${PHPCOP_ISSUES_FOUND:-0}" >> "$GITHUB_OUTPUT"  
+        echo "exit-code=${PHPCOP_EXIT_CODE:-1}" >> "$GITHUB_OUTPUT"
+        echo "issues-found=${PHPCOP_ISSUES_FOUND:-0}" >> "$GITHUB_OUTPUT"
         echo "vulnerabilities-found=${PHPCOP_VULNS_FOUND:-0}" >> "$GITHUB_OUTPUT"
         echo "report-file=phpcop-output.txt" >> "$GITHUB_OUTPUT"
