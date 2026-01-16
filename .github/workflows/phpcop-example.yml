@@ -6,8 +6,8 @@ name: 🚓 Security Scan
 on:
   push:
     branches: [ main, develop ]
-  pull_request:
-    branches: [ main ]
+  # Note: PR testing uses test-action.yml with local action
+  # This example workflow runs after merge to validate the published action
 
 jobs:
   security-scan:
@@ -21,13 +21,12 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.1'
+          php-version: '8.3'
           coverage: none
           tools: composer
       
       - name: Install Dependencies
-        run: composer install --no-dev --prefer-dist --no-progress --no-suggest
-      
+        run: composer install --no-dev --prefer-dist --no-progress      
       - name: PHPCop Security Scan
         uses: hfryan/php-cop@main
         with:
@@ -62,13 +61,12 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.1'
+          php-version: '8.3'
           coverage: none
           tools: composer
       
       - name: Install All Dependencies
-        run: composer install --prefer-dist --no-progress --no-suggest
-      
+        run: composer install --prefer-dist --no-progress      
       - name: Scan Dev Dependencies
         uses: hfryan/php-cop@main
         with:

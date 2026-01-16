@@ -157,7 +157,7 @@ PHPCop uses intelligent exit codes for precise CI/CD control:
 
 ## Requirements
 
-- PHP 8.1+ (automatically provided by the action)
+- PHP 8.3+ (automatically provided by the action)
 - `composer.lock` file in your project
 - Composer dependencies installed
 

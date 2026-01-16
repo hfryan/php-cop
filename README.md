@@ -562,7 +562,7 @@ Create a `.phpcop.json` file in your project root for persistent settings:
 
 ## Requirements
 
-- PHP 8.2 or higher
+- PHP 8.3 or higher
 - Composer 2.x
 - A `composer.lock` file in your project
 
